@@ -28,6 +28,7 @@ import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.bulk.OperationType;
 import co.elastic.clients.elasticsearch.end_to_end.RequestTest;
+import co.elastic.clients.elasticsearch.indices.IndicesStatsResponse;
 import co.elastic.clients.json.JsonpMapper;
 import co.elastic.clients.json.JsonpUtils;
 import co.elastic.clients.json.SimpleJsonpMapper;
@@ -47,6 +48,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -88,25 +90,50 @@ class BulkIngesterTest extends Assertions {
     @Test
     public void basicTestFlush() throws Exception {
         // Prime numbers, so that we have leftovers to flush before shutting down
-        multiThreadTest(7, 3, 5, 101);
+        multiThreadTest(7, 3, 5, 101, true);
+    }
+
+    @Test
+    public void basicTestFlushWithInternalScheduler() throws Exception {
+        // Prime numbers, so that we have leftovers to flush before shutting down
+        multiThreadTest(7, 3, 5, 101, false);
     }
 
     @Test
     public void basicTestNoFlush() throws Exception {
         // Will have nothing to flush on close.
-        multiThreadTest(10, 3, 5, 100);
+        multiThreadTest(10, 3, 5, 100, true);
     }
 
-    private void multiThreadTest(int maxOperations, int maxRequests, int numThreads, int numOperations) throws Exception {
+    @Test
+    public void basicTestNoFlushWithInternalScheduler() throws Exception {
+        // Will have nothing to flush on close.
+        multiThreadTest(10, 3, 5, 100, false);
+    }
+
+    private void multiThreadTest(int maxOperations, int maxRequests, int numThreads, int numOperations,
+                                 boolean externalScheduler) throws Exception {
 
         CountingListener listener = new CountingListener();
         TestTransport transport = new TestTransport();
         ElasticsearchAsyncClient client = new ElasticsearchAsyncClient(transport);
+        ScheduledExecutorService scheduler;
+        if (externalScheduler) {
+            scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = Executors.defaultThreadFactory().newThread(r);
+                t.setName("my-bulk-ingester-executor#");
+                t.setDaemon(true);
+                return t;
+            });
+        } else {
+            scheduler = null;
+        }
 
         BulkIngester<Void> ingester = BulkIngester.of(b -> b
             .client(client)
             .maxOperations(maxOperations)
             .maxConcurrentRequests(maxRequests)
+            .scheduler(scheduler)
             .listener(listener)
         );
 
@@ -130,6 +157,7 @@ class BulkIngesterTest extends Assertions {
 
         ingester.close();
         transport.close();
+        if (scheduler != null) scheduler.shutdownNow();
 
         printStats(ingester);
         printStats(listener);
@@ -148,10 +176,54 @@ class BulkIngesterTest extends Assertions {
     }
 
     @Test
+    public void multiThreadStressTest() throws InterruptedException, IOException {
+
+        String index = "bulk-ingester-stress-test";
+        ElasticsearchClient client = ElasticsearchTestServer.global().client();
+
+        // DISCLAIMER: this configuration is highly inefficient and only used here to showcase an extreme
+        // situation where the number of adding threads greatly exceeds the number of concurrent requests
+        // handled by the ingester. It's strongly recommended to always tweak maxConcurrentRequests accordingly.
+        BulkIngester<?> ingester = BulkIngester.of(b -> b
+            .client(client)
+            .globalSettings(s -> s.index(index))
+            .flushInterval(5, TimeUnit.SECONDS)
+        );
+
+        RequestTest.AppData appData = new RequestTest.AppData();
+        appData.setIntValue(42);
+        appData.setMsg("Some message");
+
+        ExecutorService executor = Executors.newFixedThreadPool(50);
+
+        for (int i = 0; i < 100000; i++) {
+            int ii = i;
+            Runnable thread = () -> {
+                int finalI = ii;
+                ingester.add(_1 -> _1
+                    .create(_2 -> _2
+                        .id(String.valueOf(finalI))
+                        .document(appData)
+                    ));
+            };
+            executor.submit(thread);
+        }
+
+        executor.awaitTermination(10,TimeUnit.SECONDS);
+        ingester.close();
+
+        client.indices().refresh();
+
+        IndicesStatsResponse indexStats = client.indices().stats(g -> g.index(index));
+
+        assertTrue(indexStats.indices().get(index).primaries().docs().count()==100000);
+    }
+
+    @Test
     public void sizeLimitTest() throws Exception {
         TestTransport transport = new TestTransport();
 
-        long operationSize = IngesterOperation.of(operation, transport.jsonpMapper()).size();
+        long operationSize = IngesterOperation.of(new RetryableBulkOperation<>(operation, null, null), transport.jsonpMapper()).size();
 
         BulkIngester<?> ingester = BulkIngester.of(b -> b
             .client(new ElasticsearchAsyncClient(transport))
@@ -181,7 +253,7 @@ class BulkIngesterTest extends Assertions {
             // Disable other flushing limits
             .maxSize(-1)
             .maxOperations(-1)
-            .maxConcurrentRequests(Integer.MAX_VALUE)
+            .maxConcurrentRequests(Integer.MAX_VALUE-1)
         );
 
         // Add an operation every 100 ms to give time
@@ -242,7 +314,7 @@ class BulkIngesterTest extends Assertions {
             // Disable other flushing limits
             .maxSize(-1)
             .maxOperations(-1)
-            .maxConcurrentRequests(Integer.MAX_VALUE)
+            .maxConcurrentRequests(Integer.MAX_VALUE - 1)
             .listener(listener)
         );
 
@@ -365,17 +437,18 @@ class BulkIngesterTest extends Assertions {
         JsonpMapper mapper = new SimpleJsonpMapper();
 
         BulkOperation create = BulkOperation.of(o -> o.create(c -> c
-                .pipeline("pipe")
-                .requireAlias(true)
-                .index("some_idx")
-                .id("some_id")
-                .document("Some doc")
+            .pipeline("pipe")
+            .requireAlias(true)
+            .index("some_idx")
+            .id("some_id")
+            .document("Some doc")
         ));
 
         String createStr = JsonpUtils.toJsonString(create, mapper);
         assertEquals(json, createStr);
 
-        BulkOperation create1 = IngesterOperation.of(create, mapper).operation();
+        BulkOperation create1 = IngesterOperation.of(new RetryableBulkOperation<>(create, null, null), mapper)
+            .repeatableOperation().operation();
 
         String create1Str = JsonpUtils.toJsonString(create1, mapper);
         assertEquals(json, create1Str);
@@ -422,8 +495,8 @@ class BulkIngesterTest extends Assertions {
             assertEquals(
                 42,
                 client.get(b -> b
-                    .index(index)
-                    .id(id),
+                        .index(index)
+                        .id(id),
                     RequestTest.AppData.class
                 ).source().getIntValue()
             );

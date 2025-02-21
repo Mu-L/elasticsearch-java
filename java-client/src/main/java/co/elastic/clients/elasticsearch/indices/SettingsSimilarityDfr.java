@@ -61,7 +61,7 @@ import javax.annotation.Nullable;
  *      specification</a>
  */
 @JsonpDeserializable
-public class SettingsSimilarityDfr implements JsonpSerializable {
+public class SettingsSimilarityDfr implements SettingsSimilarityVariant, JsonpSerializable {
 	private final DFRAfterEffect afterEffect;
 
 	private final DFRBasicModel basicModel;
@@ -80,6 +80,14 @@ public class SettingsSimilarityDfr implements JsonpSerializable {
 
 	public static SettingsSimilarityDfr of(Function<Builder, ObjectBuilder<SettingsSimilarityDfr>> fn) {
 		return fn.apply(new Builder()).build();
+	}
+
+	/**
+	 * SettingsSimilarity variant kind.
+	 */
+	@Override
+	public SettingsSimilarity.Kind _settingsSimilarityKind() {
+		return SettingsSimilarity.Kind.Dfr;
 	}
 
 	/**
@@ -113,6 +121,8 @@ public class SettingsSimilarityDfr implements JsonpSerializable {
 	}
 
 	protected void serializeInternal(JsonGenerator generator, JsonpMapper mapper) {
+
+		generator.write("type", "DFR");
 
 		generator.writeKey("after_effect");
 		this.afterEffect.serialize(generator, mapper);
@@ -199,6 +209,7 @@ public class SettingsSimilarityDfr implements JsonpSerializable {
 		op.add(Builder::basicModel, DFRBasicModel._DESERIALIZER, "basic_model");
 		op.add(Builder::normalization, Normalization._DESERIALIZER, "normalization");
 
+		op.ignore("type");
 	}
 
 }

@@ -1,8 +1,9 @@
 <img alt="Elastic logo" align="right" width="auto" height="auto" src="https://www.elastic.co/static-res/images/elastic-logo-200.png">
 
 # Elasticsearch Java Client
+Elasticsearch is a distributed, RESTful search engine optimized for speed and relevance on production-scale workloads. You can use Elasticsearch to perform real-time search over massive datasets for applications including Vector search, Full-text search, Logs, Metrics, Application Performance Monitoring, Security Logs and more ! 
 
-The official Java client for [Elasticsearch](https://github.com/elastic/elasticsearch).
+This repo has the official Java client for [Elasticsearch](https://github.com/elastic/elasticsearch).
 
 The Java client for Elasticsearch provides strongly typed requests and responses for all Elasticsearch APIs. It delegates protocol handling to an http client such as the [Elasticsearch Low Level REST client](https://www.elastic.co/guide/en/elasticsearch/client/java-api-client/current/java-rest-low.html) that takes care of all transport-level concerns (http connection establishment and pooling, retries, etc).
 
@@ -26,6 +27,25 @@ of the getting started documentation.
 
 Refer to the [Connecting section](https://www.elastic.co/guide/en/elasticsearch/client/java-api-client/current/getting-started-java.html#_connecting)
 of the getting started documentation.
+
+## Compatibility
+
+The Elasticsearch client is compatible with currently maintained Java versions.
+
+The Java client is forward compatible; meaning that the client supports
+communicating with greater or equal minor versions of Elasticsearch without
+breaking. It does not mean that the client automatically supports new features
+of newer Elasticsearch versions; it is only possible after a release of a new
+client version. For example, a 8.12 client version won't automatically support
+the new features of the 8.13 version of Elasticsearch, the 8.13 client version
+is required for that. Elasticsearch language clients are only backwards
+compatible with default distributions and without guarantees made.
+
+| Elasticsearch Version | Elasticsearch-Java Branch | Supported |
+| --------------------- | ------------------------- | --------- |
+| main                  | main                      |           |
+| 8.x                   | 8.x                       | 8.x       |
+| 7.x                   | 7.x                       | 7.17      |
 
 ## Usage
 

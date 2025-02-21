@@ -62,6 +62,7 @@ public class NodeInfoSettings implements JsonpSerializable {
 
 	private final NodeInfoSettingsNode node;
 
+	@Nullable
 	private final NodeInfoPath path;
 
 	@Nullable
@@ -73,6 +74,7 @@ public class NodeInfoSettings implements JsonpSerializable {
 	@Nullable
 	private final NodeInfoAction action;
 
+	@Nullable
 	private final NodeInfoClient client;
 
 	private final NodeInfoSettingsHttp http;
@@ -103,11 +105,11 @@ public class NodeInfoSettings implements JsonpSerializable {
 
 		this.cluster = ApiTypeHelper.requireNonNull(builder.cluster, this, "cluster");
 		this.node = ApiTypeHelper.requireNonNull(builder.node, this, "node");
-		this.path = ApiTypeHelper.requireNonNull(builder.path, this, "path");
+		this.path = builder.path;
 		this.repositories = builder.repositories;
 		this.discovery = builder.discovery;
 		this.action = builder.action;
-		this.client = ApiTypeHelper.requireNonNull(builder.client, this, "client");
+		this.client = builder.client;
 		this.http = ApiTypeHelper.requireNonNull(builder.http, this, "http");
 		this.bootstrap = builder.bootstrap;
 		this.transport = ApiTypeHelper.requireNonNull(builder.transport, this, "transport");
@@ -138,8 +140,9 @@ public class NodeInfoSettings implements JsonpSerializable {
 	}
 
 	/**
-	 * Required - API name: {@code path}
+	 * API name: {@code path}
 	 */
+	@Nullable
 	public final NodeInfoPath path() {
 		return this.path;
 	}
@@ -169,8 +172,9 @@ public class NodeInfoSettings implements JsonpSerializable {
 	}
 
 	/**
-	 * Required - API name: {@code client}
+	 * API name: {@code client}
 	 */
+	@Nullable
 	public final NodeInfoClient client() {
 		return this.client;
 	}
@@ -254,9 +258,11 @@ public class NodeInfoSettings implements JsonpSerializable {
 		generator.writeKey("node");
 		this.node.serialize(generator, mapper);
 
-		generator.writeKey("path");
-		this.path.serialize(generator, mapper);
+		if (this.path != null) {
+			generator.writeKey("path");
+			this.path.serialize(generator, mapper);
 
+		}
 		if (this.repositories != null) {
 			generator.writeKey("repositories");
 			this.repositories.serialize(generator, mapper);
@@ -272,9 +278,11 @@ public class NodeInfoSettings implements JsonpSerializable {
 			this.action.serialize(generator, mapper);
 
 		}
-		generator.writeKey("client");
-		this.client.serialize(generator, mapper);
+		if (this.client != null) {
+			generator.writeKey("client");
+			this.client.serialize(generator, mapper);
 
+		}
 		generator.writeKey("http");
 		this.http.serialize(generator, mapper);
 
@@ -330,6 +338,7 @@ public class NodeInfoSettings implements JsonpSerializable {
 
 		private NodeInfoSettingsNode node;
 
+		@Nullable
 		private NodeInfoPath path;
 
 		@Nullable
@@ -341,6 +350,7 @@ public class NodeInfoSettings implements JsonpSerializable {
 		@Nullable
 		private NodeInfoAction action;
 
+		@Nullable
 		private NodeInfoClient client;
 
 		private NodeInfoSettingsHttp http;
@@ -397,15 +407,15 @@ public class NodeInfoSettings implements JsonpSerializable {
 		}
 
 		/**
-		 * Required - API name: {@code path}
+		 * API name: {@code path}
 		 */
-		public final Builder path(NodeInfoPath value) {
+		public final Builder path(@Nullable NodeInfoPath value) {
 			this.path = value;
 			return this;
 		}
 
 		/**
-		 * Required - API name: {@code path}
+		 * API name: {@code path}
 		 */
 		public final Builder path(Function<NodeInfoPath.Builder, ObjectBuilder<NodeInfoPath>> fn) {
 			return this.path(fn.apply(new NodeInfoPath.Builder()).build());
@@ -458,15 +468,15 @@ public class NodeInfoSettings implements JsonpSerializable {
 		}
 
 		/**
-		 * Required - API name: {@code client}
+		 * API name: {@code client}
 		 */
-		public final Builder client(NodeInfoClient value) {
+		public final Builder client(@Nullable NodeInfoClient value) {
 			this.client = value;
 			return this;
 		}
 
 		/**
-		 * Required - API name: {@code client}
+		 * API name: {@code client}
 		 */
 		public final Builder client(Function<NodeInfoClient.Builder, ObjectBuilder<NodeInfoClient>> fn) {
 			return this.client(fn.apply(new NodeInfoClient.Builder()).build());

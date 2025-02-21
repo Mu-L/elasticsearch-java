@@ -29,6 +29,7 @@ import co.elastic.clients.transport.JsonEndpoint;
 import co.elastic.clients.transport.Version;
 import co.elastic.clients.transport.endpoints.DelegatingJsonEndpoint;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
+import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -36,11 +37,20 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.elasticsearch.client.RestClient;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.images.builder.ImageFromDockerfile;
+import org.testcontainers.shaded.org.apache.commons.io.IOUtils;
 import org.testcontainers.utility.DockerImageName;
 
 import javax.net.ssl.SSLContext;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Base64;
 
 public class ElasticsearchTestServer implements AutoCloseable {
 
@@ -52,12 +62,34 @@ public class ElasticsearchTestServer implements AutoCloseable {
     private ElasticsearchClient client;
 
     private static ElasticsearchTestServer global;
+    private static final String artifactsApiUrl = "https://artifacts-api.elastic.co/v1/versions/";
 
     public static synchronized ElasticsearchTestServer global() {
         if (global == null) {
-            System.out.println("Starting global ES test server.");
-            global = new ElasticsearchTestServer();
-            global.start();
+
+            // Try localhost:9200
+            try {
+                String localUrl = "http://localhost:9200";
+                HttpURLConnection connection = (HttpURLConnection) new URL(localUrl).openConnection();
+                connection.setRequestProperty("Authorization", "Basic " +
+                    Base64.getEncoder().encodeToString("elastic:changeme".getBytes(StandardCharsets.UTF_8)));
+
+                try (InputStream input = connection.getInputStream()) {
+                    String content = IOUtils.toString(input, StandardCharsets.UTF_8);
+                    if (content.contains("You Know, for Search")) {
+                        System.out.println("Found a running ES server at http://localhost:9200/");
+
+                        global = new ElasticsearchTestServer();
+                        global.setup(localUrl, null);
+                    }
+                }
+            } catch (Exception e) {
+                // Create container
+                System.out.println("Starting global ES test server.");
+                global = new ElasticsearchTestServer();
+                global.start();
+            }
+
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 System.out.println("Stopping global ES test server.");
                 global.close();
@@ -70,10 +102,85 @@ public class ElasticsearchTestServer implements AutoCloseable {
         this.plugins = plugins;
     }
 
-    public synchronized ElasticsearchTestServer start() {
-        Version version = Version.VERSION.major() < 8 ? new Version(7,17,5,false) : new Version(8,3,3,false);
+    protected void setup(String url, SSLContext sslContext) {
+        BasicCredentialsProvider credsProv = new BasicCredentialsProvider();
+        credsProv.setCredentials(
+            AuthScope.ANY, new UsernamePasswordCredentials("elastic", "changeme")
+        );
+        restClient = RestClient.builder(HttpHost.create(url))
+            .setHttpClientConfigCallback(hc -> hc
+                .setDefaultCredentialsProvider(credsProv)
+                .setSSLContext(sslContext)
+            )
+            .build();
+        transport = new RestClientTransport(restClient, mapper);
+        client = new ElasticsearchClient(transport);
+    }
 
-        // Note we could use version.major() + "." + version.minor() + "-SNAPSHOT" but plugins won't install on a snapshot version
+    private Version selectLatestVersion(Version version, String info) {
+        if (info.contains(version.toString())) {
+            return version;
+        }
+        // if no version X.Y.0 was found, we give up
+        if (version.maintenance() == 0) {
+            throw new RuntimeException("Elasticsearch server container version: " + version + " not yet " +
+                "available");
+        }
+        return selectLatestVersion(new Version(version.major(), version.minor(), version.maintenance() - 1,
+            false), info);
+    }
+
+    private String fetchAndWriteVersionInfo(File file) throws IOException {
+        String versionInfo = IOUtils.toString(new URL(artifactsApiUrl), StandardCharsets.UTF_8);
+        FileUtils.writeStringToFile(file, versionInfo, StandardCharsets.UTF_8);
+        return versionInfo;
+    }
+
+    private Version getLatestAvailableServerVersion(Version version) {
+        try {
+            // check if there's cached information
+            ClassLoader classLoader = getClass().getClassLoader();
+            URL location = classLoader.getResource("./co/elastic/clients/version.json");
+
+            // writing the info on file before returning
+            if (location == null) {
+                File file = new File(classLoader.getResource("./co/elastic/clients").getFile() + "/version" +
+                    ".json");
+                String versionInfo = fetchAndWriteVersionInfo(file);
+                return selectLatestVersion(version, versionInfo);
+            }
+
+            File file = new File(location.getFile());
+
+            // info file was found, but it's expired
+            if (Instant.ofEpochMilli(file.lastModified()).isBefore(Instant.now().minus(24,
+                ChronoUnit.HOURS))) {
+                String versionInfo = fetchAndWriteVersionInfo(file);
+                return selectLatestVersion(version, versionInfo);
+            }
+
+            // info file exists and it has new info
+            String versionInfo = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
+            return selectLatestVersion(version, versionInfo);
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public synchronized ElasticsearchTestServer start() {
+        if (this.client != null) {
+            return this;
+        }
+
+        Version version = getLatestAvailableServerVersion(Version.VERSION);
+
+        // using specific stable version for tests with plugins
+        if (plugins.length > 0) {
+            version = Version.VERSION.major() < 8 ? new Version(7, 17, 25, false) : new Version(8, 16, 0,
+                false);
+        }
+
         String esImage = "docker.elastic.co/elasticsearch/elasticsearch:" + version;
 
         DockerImageName image;
@@ -101,25 +208,12 @@ public class ElasticsearchTestServer implements AutoCloseable {
             .withPassword("changeme");
         container.start();
 
-        int port = container.getMappedPort(9200);
-
         boolean useTLS = version.major() >= 8;
-        HttpHost host = new HttpHost("localhost", port, useTLS ? "https": "http");
 
         SSLContext sslContext = useTLS ? container.createSslContextFromCa() : null;
+        String url = (useTLS ? "https://" : "http://") + container.getHttpHostAddress();
 
-        BasicCredentialsProvider credsProv = new BasicCredentialsProvider();
-        credsProv.setCredentials(
-            AuthScope.ANY, new UsernamePasswordCredentials("elastic", "changeme")
-        );
-        restClient = RestClient.builder(host)
-            .setHttpClientConfigCallback(hc -> hc
-                .setDefaultCredentialsProvider(credsProv)
-                .setSSLContext(sslContext)
-            )
-            .build();
-        transport = new RestClientTransport(restClient, mapper);
-        client = new ElasticsearchClient(transport);
+        setup(url, sslContext);
 
         return this;
     }
@@ -133,10 +227,11 @@ public class ElasticsearchTestServer implements AutoCloseable {
 
         try {
             @SuppressWarnings("unchecked")
-            JsonEndpoint<Req, JsonData, ErrorResponse> endpoint0 = (JsonEndpoint<Req, JsonData, ErrorResponse>) request.getClass()
+            JsonEndpoint<Req, JsonData, ErrorResponse> endpoint0 = (JsonEndpoint<Req, JsonData,
+                ErrorResponse>) request.getClass()
                 .getDeclaredField("_ENDPOINT").get(null);
             endpoint = endpoint0;
-        } catch (IllegalAccessException|NoSuchFieldException e) {
+        } catch (IllegalAccessException | NoSuchFieldException e) {
             throw new RuntimeException(e);
         }
 

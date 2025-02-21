@@ -59,7 +59,7 @@ import javax.annotation.Nullable;
  *      specification</a>
  */
 @JsonpDeserializable
-public class SettingsSimilarityDfi implements JsonpSerializable {
+public class SettingsSimilarityDfi implements SettingsSimilarityVariant, JsonpSerializable {
 	private final DFIIndependenceMeasure independenceMeasure;
 
 	// ---------------------------------------------------------------------------------------------
@@ -73,6 +73,14 @@ public class SettingsSimilarityDfi implements JsonpSerializable {
 
 	public static SettingsSimilarityDfi of(Function<Builder, ObjectBuilder<SettingsSimilarityDfi>> fn) {
 		return fn.apply(new Builder()).build();
+	}
+
+	/**
+	 * SettingsSimilarity variant kind.
+	 */
+	@Override
+	public SettingsSimilarity.Kind _settingsSimilarityKind() {
+		return SettingsSimilarity.Kind.Dfi;
 	}
 
 	/**
@@ -92,6 +100,8 @@ public class SettingsSimilarityDfi implements JsonpSerializable {
 	}
 
 	protected void serializeInternal(JsonGenerator generator, JsonpMapper mapper) {
+
+		generator.write("type", "DFI");
 
 		generator.writeKey("independence_measure");
 		this.independenceMeasure.serialize(generator, mapper);
@@ -152,6 +162,7 @@ public class SettingsSimilarityDfi implements JsonpSerializable {
 
 		op.add(Builder::independenceMeasure, DFIIndependenceMeasure._DESERIALIZER, "independence_measure");
 
+		op.ignore("type");
 	}
 
 }

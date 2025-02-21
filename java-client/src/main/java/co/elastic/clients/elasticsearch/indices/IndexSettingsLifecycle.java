@@ -26,7 +26,6 @@ import co.elastic.clients.json.JsonpSerializable;
 import co.elastic.clients.json.JsonpUtils;
 import co.elastic.clients.json.ObjectBuilderDeserializer;
 import co.elastic.clients.json.ObjectDeserializer;
-import co.elastic.clients.util.ApiTypeHelper;
 import co.elastic.clients.util.ObjectBuilder;
 import co.elastic.clients.util.WithJsonObjectBuilderBase;
 import jakarta.json.stream.JsonGenerator;
@@ -62,6 +61,7 @@ import javax.annotation.Nullable;
  */
 @JsonpDeserializable
 public class IndexSettingsLifecycle implements JsonpSerializable {
+	@Nullable
 	private final String name;
 
 	@Nullable
@@ -79,16 +79,20 @@ public class IndexSettingsLifecycle implements JsonpSerializable {
 	@Nullable
 	private final String rolloverAlias;
 
+	@Nullable
+	private final Boolean preferIlm;
+
 	// ---------------------------------------------------------------------------------------------
 
 	private IndexSettingsLifecycle(Builder builder) {
 
-		this.name = ApiTypeHelper.requireNonNull(builder.name, this, "name");
+		this.name = builder.name;
 		this.indexingComplete = builder.indexingComplete;
 		this.originationDate = builder.originationDate;
 		this.parseOriginationDate = builder.parseOriginationDate;
 		this.step = builder.step;
 		this.rolloverAlias = builder.rolloverAlias;
+		this.preferIlm = builder.preferIlm;
 
 	}
 
@@ -97,11 +101,12 @@ public class IndexSettingsLifecycle implements JsonpSerializable {
 	}
 
 	/**
-	 * Required - The name of the policy to use to manage the index. For information
-	 * about how Elasticsearch applies policy changes, see Policy updates.
+	 * The name of the policy to use to manage the index. For information about how
+	 * Elasticsearch applies policy changes, see Policy updates.
 	 * <p>
 	 * API name: {@code name}
 	 */
+	@Nullable
 	public final String name() {
 		return this.name;
 	}
@@ -169,6 +174,17 @@ public class IndexSettingsLifecycle implements JsonpSerializable {
 	}
 
 	/**
+	 * Preference for the system that manages a data stream backing index
+	 * (preferring ILM when both ILM and DLM are applicable for an index).
+	 * <p>
+	 * API name: {@code prefer_ilm}
+	 */
+	@Nullable
+	public final Boolean preferIlm() {
+		return this.preferIlm;
+	}
+
+	/**
 	 * Serialize this object to JSON.
 	 */
 	public void serialize(JsonGenerator generator, JsonpMapper mapper) {
@@ -179,9 +195,11 @@ public class IndexSettingsLifecycle implements JsonpSerializable {
 
 	protected void serializeInternal(JsonGenerator generator, JsonpMapper mapper) {
 
-		generator.writeKey("name");
-		generator.write(this.name);
+		if (this.name != null) {
+			generator.writeKey("name");
+			generator.write(this.name);
 
+		}
 		if (this.indexingComplete != null) {
 			generator.writeKey("indexing_complete");
 			generator.write(this.indexingComplete);
@@ -207,6 +225,11 @@ public class IndexSettingsLifecycle implements JsonpSerializable {
 			generator.write(this.rolloverAlias);
 
 		}
+		if (this.preferIlm != null) {
+			generator.writeKey("prefer_ilm");
+			generator.write(this.preferIlm);
+
+		}
 
 	}
 
@@ -224,6 +247,7 @@ public class IndexSettingsLifecycle implements JsonpSerializable {
 	public static class Builder extends WithJsonObjectBuilderBase<Builder>
 			implements
 				ObjectBuilder<IndexSettingsLifecycle> {
+		@Nullable
 		private String name;
 
 		@Nullable
@@ -241,13 +265,16 @@ public class IndexSettingsLifecycle implements JsonpSerializable {
 		@Nullable
 		private String rolloverAlias;
 
+		@Nullable
+		private Boolean preferIlm;
+
 		/**
-		 * Required - The name of the policy to use to manage the index. For information
-		 * about how Elasticsearch applies policy changes, see Policy updates.
+		 * The name of the policy to use to manage the index. For information about how
+		 * Elasticsearch applies policy changes, see Policy updates.
 		 * <p>
 		 * API name: {@code name}
 		 */
-		public final Builder name(String value) {
+		public final Builder name(@Nullable String value) {
 			this.name = value;
 			return this;
 		}
@@ -322,6 +349,17 @@ public class IndexSettingsLifecycle implements JsonpSerializable {
 			return this;
 		}
 
+		/**
+		 * Preference for the system that manages a data stream backing index
+		 * (preferring ILM when both ILM and DLM are applicable for an index).
+		 * <p>
+		 * API name: {@code prefer_ilm}
+		 */
+		public final Builder preferIlm(@Nullable Boolean value) {
+			this.preferIlm = value;
+			return this;
+		}
+
 		@Override
 		protected Builder self() {
 			return this;
@@ -357,6 +395,7 @@ public class IndexSettingsLifecycle implements JsonpSerializable {
 		op.add(Builder::parseOriginationDate, JsonpDeserializer.booleanDeserializer(), "parse_origination_date");
 		op.add(Builder::step, IndexSettingsLifecycleStep._DESERIALIZER, "step");
 		op.add(Builder::rolloverAlias, JsonpDeserializer.stringDeserializer(), "rollover_alias");
+		op.add(Builder::preferIlm, JsonpDeserializer.booleanDeserializer(), "prefer_ilm");
 
 	}
 

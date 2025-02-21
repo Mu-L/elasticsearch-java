@@ -22,7 +22,7 @@ package co.elastic.clients.elasticsearch.async_search;
 import co.elastic.clients.elasticsearch._types.ErrorResponse;
 import co.elastic.clients.elasticsearch._types.ExpandWildcard;
 import co.elastic.clients.elasticsearch._types.FieldValue;
-import co.elastic.clients.elasticsearch._types.KnnQuery;
+import co.elastic.clients.elasticsearch._types.KnnSearch;
 import co.elastic.clients.elasticsearch._types.RequestBase;
 import co.elastic.clients.elasticsearch._types.ScriptField;
 import co.elastic.clients.elasticsearch._types.SearchType;
@@ -85,15 +85,20 @@ import javax.annotation.Nullable;
 // typedef: async_search.submit.Request
 
 /**
- * Runs a search request asynchronously. When the primary sort of the results is
- * an indexed field, shards get sorted based on minimum and maximum value that
- * they hold for that field, hence partial results become available following
- * the sort criteria that was requested. Warning: Async search does not support
- * scroll nor search requests that only include the suggest section. By default,
- * Elasticsearch doesn’t allow you to store an async search response larger than
- * 10Mb and an attempt to do this results in an error. The maximum allowed size
- * for a stored async search response can be set by changing the
- * <code>search.max_async_search_response_size</code> cluster level setting.
+ * Run an async search.
+ * <p>
+ * When the primary sort of the results is an indexed field, shards get sorted
+ * based on minimum and maximum value that they hold for that field. Partial
+ * results become available following the sort criteria that was requested.
+ * <p>
+ * Warning: Asynchronous search does not support scroll or search requests that
+ * include only the suggest section.
+ * <p>
+ * By default, Elasticsearch does not allow you to store an async search
+ * response larger than 10Mb and an attempt to do this results in an error. The
+ * maximum allowed size for a stored async search response can be set by
+ * changing the <code>search.max_async_search_response_size</code> cluster level
+ * setting.
  * 
  * @see <a href="../doc-files/api-spec.html#async_search.submit.Request">API
  *      specification</a>
@@ -165,16 +170,13 @@ public class SubmitRequest extends RequestBase implements JsonpSerializable {
 	@Nullable
 	private final Boolean keepOnCompletion;
 
-	private final List<KnnQuery> knn;
+	private final List<KnnSearch> knn;
 
 	@Nullable
 	private final Boolean lenient;
 
 	@Nullable
 	private final Long maxConcurrentShardRequests;
-
-	@Nullable
-	private final String minCompatibleShardNode;
 
 	@Nullable
 	private final Double minScore;
@@ -184,9 +186,6 @@ public class SubmitRequest extends RequestBase implements JsonpSerializable {
 
 	@Nullable
 	private final Query postFilter;
-
-	@Nullable
-	private final Long preFilterShardSize;
 
 	@Nullable
 	private final String preference;
@@ -211,9 +210,6 @@ public class SubmitRequest extends RequestBase implements JsonpSerializable {
 	private final Map<String, RuntimeField> runtimeMappings;
 
 	private final Map<String, ScriptField> scriptFields;
-
-	@Nullable
-	private final Time scroll;
 
 	private final List<FieldValue> searchAfter;
 
@@ -287,11 +283,9 @@ public class SubmitRequest extends RequestBase implements JsonpSerializable {
 		this.knn = ApiTypeHelper.unmodifiable(builder.knn);
 		this.lenient = builder.lenient;
 		this.maxConcurrentShardRequests = builder.maxConcurrentShardRequests;
-		this.minCompatibleShardNode = builder.minCompatibleShardNode;
 		this.minScore = builder.minScore;
 		this.pit = builder.pit;
 		this.postFilter = builder.postFilter;
-		this.preFilterShardSize = builder.preFilterShardSize;
 		this.preference = builder.preference;
 		this.profile = builder.profile;
 		this.q = builder.q;
@@ -301,7 +295,6 @@ public class SubmitRequest extends RequestBase implements JsonpSerializable {
 		this.routing = builder.routing;
 		this.runtimeMappings = ApiTypeHelper.unmodifiable(builder.runtimeMappings);
 		this.scriptFields = ApiTypeHelper.unmodifiable(builder.scriptFields);
-		this.scroll = builder.scroll;
 		this.searchAfter = ApiTypeHelper.unmodifiable(builder.searchAfter);
 		this.searchType = builder.searchType;
 		this.seqNoPrimaryTerm = builder.seqNoPrimaryTerm;
@@ -576,7 +569,7 @@ public class SubmitRequest extends RequestBase implements JsonpSerializable {
 	 * <p>
 	 * API name: {@code knn}
 	 */
-	public final List<KnnQuery> knn() {
+	public final List<KnnSearch> knn() {
 		return this.knn;
 	}
 
@@ -601,14 +594,6 @@ public class SubmitRequest extends RequestBase implements JsonpSerializable {
 	@Nullable
 	public final Long maxConcurrentShardRequests() {
 		return this.maxConcurrentShardRequests;
-	}
-
-	/**
-	 * API name: {@code min_compatible_shard_node}
-	 */
-	@Nullable
-	public final String minCompatibleShardNode() {
-		return this.minCompatibleShardNode;
 	}
 
 	/**
@@ -639,18 +624,6 @@ public class SubmitRequest extends RequestBase implements JsonpSerializable {
 	@Nullable
 	public final Query postFilter() {
 		return this.postFilter;
-	}
-
-	/**
-	 * The default value cannot be changed, which enforces the execution of a
-	 * pre-filter roundtrip to retrieve statistics from each shard so that the ones
-	 * that surely don’t hold any document matching the query get skipped.
-	 * <p>
-	 * API name: {@code pre_filter_shard_size}
-	 */
-	@Nullable
-	public final Long preFilterShardSize() {
-		return this.preFilterShardSize;
 	}
 
 	/**
@@ -737,14 +710,6 @@ public class SubmitRequest extends RequestBase implements JsonpSerializable {
 	 */
 	public final Map<String, ScriptField> scriptFields() {
 		return this.scriptFields;
-	}
-
-	/**
-	 * API name: {@code scroll}
-	 */
-	@Nullable
-	public final Time scroll() {
-		return this.scroll;
 	}
 
 	/**
@@ -1003,7 +968,7 @@ public class SubmitRequest extends RequestBase implements JsonpSerializable {
 		if (ApiTypeHelper.isDefined(this.knn)) {
 			generator.writeKey("knn");
 			generator.writeStartArray();
-			for (KnnQuery item0 : this.knn) {
+			for (KnnSearch item0 : this.knn) {
 				item0.serialize(generator, mapper);
 
 			}
@@ -1114,12 +1079,18 @@ public class SubmitRequest extends RequestBase implements JsonpSerializable {
 		}
 		if (ApiTypeHelper.isDefined(this.storedFields)) {
 			generator.writeKey("stored_fields");
-			generator.writeStartArray();
-			for (String item0 : this.storedFields) {
-				generator.write(item0);
+			if (this.storedFields.size() == 1) {
+				String singleItem = this.storedFields.get(0);
+				generator.write(singleItem);
 
+			} else {
+				generator.writeStartArray();
+				for (String item0 : this.storedFields) {
+					generator.write(item0);
+
+				}
+				generator.writeEnd();
 			}
-			generator.writeEnd();
 
 		}
 		if (this.suggest != null) {
@@ -1235,16 +1206,13 @@ public class SubmitRequest extends RequestBase implements JsonpSerializable {
 		private Boolean keepOnCompletion;
 
 		@Nullable
-		private List<KnnQuery> knn;
+		private List<KnnSearch> knn;
 
 		@Nullable
 		private Boolean lenient;
 
 		@Nullable
 		private Long maxConcurrentShardRequests;
-
-		@Nullable
-		private String minCompatibleShardNode;
 
 		@Nullable
 		private Double minScore;
@@ -1254,9 +1222,6 @@ public class SubmitRequest extends RequestBase implements JsonpSerializable {
 
 		@Nullable
 		private Query postFilter;
-
-		@Nullable
-		private Long preFilterShardSize;
 
 		@Nullable
 		private String preference;
@@ -1284,9 +1249,6 @@ public class SubmitRequest extends RequestBase implements JsonpSerializable {
 
 		@Nullable
 		private Map<String, ScriptField> scriptFields;
-
-		@Nullable
-		private Time scroll;
 
 		@Nullable
 		private List<FieldValue> searchAfter;
@@ -1761,7 +1723,7 @@ public class SubmitRequest extends RequestBase implements JsonpSerializable {
 		 * <p>
 		 * Adds all elements of <code>list</code> to <code>knn</code>.
 		 */
-		public final Builder knn(List<KnnQuery> list) {
+		public final Builder knn(List<KnnSearch> list) {
 			this.knn = _listAddAll(this.knn, list);
 			return this;
 		}
@@ -1773,7 +1735,7 @@ public class SubmitRequest extends RequestBase implements JsonpSerializable {
 		 * <p>
 		 * Adds one or more values to <code>knn</code>.
 		 */
-		public final Builder knn(KnnQuery value, KnnQuery... values) {
+		public final Builder knn(KnnSearch value, KnnSearch... values) {
 			this.knn = _listAdd(this.knn, value, values);
 			return this;
 		}
@@ -1785,8 +1747,8 @@ public class SubmitRequest extends RequestBase implements JsonpSerializable {
 		 * <p>
 		 * Adds a value to <code>knn</code> using a builder lambda.
 		 */
-		public final Builder knn(Function<KnnQuery.Builder, ObjectBuilder<KnnQuery>> fn) {
-			return knn(fn.apply(new KnnQuery.Builder()).build());
+		public final Builder knn(Function<KnnSearch.Builder, ObjectBuilder<KnnSearch>> fn) {
+			return knn(fn.apply(new KnnSearch.Builder()).build());
 		}
 
 		/**
@@ -1809,14 +1771,6 @@ public class SubmitRequest extends RequestBase implements JsonpSerializable {
 		 */
 		public final Builder maxConcurrentShardRequests(@Nullable Long value) {
 			this.maxConcurrentShardRequests = value;
-			return this;
-		}
-
-		/**
-		 * API name: {@code min_compatible_shard_node}
-		 */
-		public final Builder minCompatibleShardNode(@Nullable String value) {
-			this.minCompatibleShardNode = value;
 			return this;
 		}
 
@@ -1865,18 +1819,6 @@ public class SubmitRequest extends RequestBase implements JsonpSerializable {
 		 */
 		public final Builder postFilter(Function<Query.Builder, ObjectBuilder<Query>> fn) {
 			return this.postFilter(fn.apply(new Query.Builder()).build());
-		}
-
-		/**
-		 * The default value cannot be changed, which enforces the execution of a
-		 * pre-filter roundtrip to retrieve statistics from each shard so that the ones
-		 * that surely don’t hold any document matching the query get skipped.
-		 * <p>
-		 * API name: {@code pre_filter_shard_size}
-		 */
-		public final Builder preFilterShardSize(@Nullable Long value) {
-			this.preFilterShardSize = value;
-			return this;
 		}
 
 		/**
@@ -2049,21 +1991,6 @@ public class SubmitRequest extends RequestBase implements JsonpSerializable {
 		 */
 		public final Builder scriptFields(String key, Function<ScriptField.Builder, ObjectBuilder<ScriptField>> fn) {
 			return scriptFields(key, fn.apply(new ScriptField.Builder()).build());
-		}
-
-		/**
-		 * API name: {@code scroll}
-		 */
-		public final Builder scroll(@Nullable Time value) {
-			this.scroll = value;
-			return this;
-		}
-
-		/**
-		 * API name: {@code scroll}
-		 */
-		public final Builder scroll(Function<Time.Builder, ObjectBuilder<Time>> fn) {
-			return this.scroll(fn.apply(new Time.Builder()).build());
 		}
 
 		/**
@@ -2442,7 +2369,7 @@ public class SubmitRequest extends RequestBase implements JsonpSerializable {
 				JsonpDeserializer.arrayDeserializer(
 						JsonpDeserializer.stringMapDeserializer(JsonpDeserializer.doubleDeserializer())),
 				"indices_boost");
-		op.add(Builder::knn, JsonpDeserializer.arrayDeserializer(KnnQuery._DESERIALIZER), "knn");
+		op.add(Builder::knn, JsonpDeserializer.arrayDeserializer(KnnSearch._DESERIALIZER), "knn");
 		op.add(Builder::minScore, JsonpDeserializer.doubleDeserializer(), "min_score");
 		op.add(Builder::pit, PointInTimeReference._DESERIALIZER, "pit");
 		op.add(Builder::postFilter, Query._DESERIALIZER, "post_filter");
@@ -2533,12 +2460,6 @@ public class SubmitRequest extends RequestBase implements JsonpSerializable {
 				if (request.df != null) {
 					params.put("df", request.df);
 				}
-				if (request.preFilterShardSize != null) {
-					params.put("pre_filter_shard_size", String.valueOf(request.preFilterShardSize));
-				}
-				if (request.minCompatibleShardNode != null) {
-					params.put("min_compatible_shard_node", request.minCompatibleShardNode);
-				}
 				if (request.lenient != null) {
 					params.put("lenient", String.valueOf(request.lenient));
 				}
@@ -2575,9 +2496,6 @@ public class SubmitRequest extends RequestBase implements JsonpSerializable {
 				}
 				if (request.analyzeWildcard != null) {
 					params.put("analyze_wildcard", String.valueOf(request.analyzeWildcard));
-				}
-				if (request.scroll != null) {
-					params.put("scroll", request.scroll._toJsonString());
 				}
 				if (request.waitForCompletionTimeout != null) {
 					params.put("wait_for_completion_timeout", request.waitForCompletionTimeout._toJsonString());

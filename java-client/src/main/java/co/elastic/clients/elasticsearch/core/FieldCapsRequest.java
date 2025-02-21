@@ -63,11 +63,14 @@ import javax.annotation.Nullable;
 // typedef: _global.field_caps.Request
 
 /**
- * The field capabilities API returns the information about the capabilities of
- * fields among multiple indices. The field capabilities API returns runtime
- * fields like any other field. For example, a runtime field with a type of
- * keyword is returned as any other field that belongs to the
- * <code>keyword</code> family.
+ * Get the field capabilities.
+ * <p>
+ * Get information about the capabilities of fields among multiple indices.
+ * <p>
+ * For data streams, the API returns field capabilities among the stream’s
+ * backing indices. It returns runtime fields like any other field. For example,
+ * a runtime field with a type of keyword is returned the same as any other
+ * field that belongs to the <code>keyword</code> family.
  * 
  * @see <a href="../doc-files/api-spec.html#_global.field_caps.Request">API
  *      specification</a>
@@ -86,6 +89,9 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 
 	@Nullable
 	private final Boolean ignoreUnavailable;
+
+	@Nullable
+	private final Boolean includeEmptyFields;
 
 	@Nullable
 	private final Boolean includeUnmapped;
@@ -108,6 +114,7 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 		this.fields = ApiTypeHelper.unmodifiable(builder.fields);
 		this.filters = builder.filters;
 		this.ignoreUnavailable = builder.ignoreUnavailable;
+		this.includeEmptyFields = builder.includeEmptyFields;
 		this.includeUnmapped = builder.includeUnmapped;
 		this.index = ApiTypeHelper.unmodifiable(builder.index);
 		this.indexFilter = builder.indexFilter;
@@ -135,7 +142,7 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 	}
 
 	/**
-	 * Type of index that wildcard patterns can match. If the request can target
+	 * The type of index that wildcard patterns can match. If the request can target
 	 * data streams, this argument determines whether wildcard expressions match
 	 * hidden data streams. Supports comma-separated values, such as
 	 * <code>open,hidden</code>.
@@ -147,7 +154,7 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 	}
 
 	/**
-	 * List of fields to retrieve capabilities for. Wildcard (<code>*</code>)
+	 * A list of fields to retrieve capabilities for. Wildcard (<code>*</code>)
 	 * expressions are supported.
 	 * <p>
 	 * API name: {@code fields}
@@ -157,8 +164,7 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 	}
 
 	/**
-	 * An optional set of filters: can include
-	 * +metadata,-metadata,-nested,-multifield,-parent
+	 * A comma-separated list of filters to apply to the response.
 	 * <p>
 	 * API name: {@code filters}
 	 */
@@ -179,6 +185,16 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 	}
 
 	/**
+	 * If false, empty fields are not included in the response.
+	 * <p>
+	 * API name: {@code include_empty_fields}
+	 */
+	@Nullable
+	public final Boolean includeEmptyFields() {
+		return this.includeEmptyFields;
+	}
+
+	/**
 	 * If true, unmapped fields are included in the response.
 	 * <p>
 	 * API name: {@code include_unmapped}
@@ -189,9 +205,9 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 	}
 
 	/**
-	 * Comma-separated list of data streams, indices, and aliases used to limit the
-	 * request. Supports wildcards (*). To target all data streams and indices, omit
-	 * this parameter or use * or _all.
+	 * A comma-separated list of data streams, indices, and aliases used to limit
+	 * the request. Supports wildcards (*). To target all data streams and indices,
+	 * omit this parameter or use * or _all.
 	 * <p>
 	 * API name: {@code index}
 	 */
@@ -200,8 +216,16 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 	}
 
 	/**
-	 * Allows to filter indices if the provided query rewrites to match_none on
+	 * Filter indices if the provided query rewrites to <code>match_none</code> on
 	 * every shard.
+	 * <p>
+	 * IMPORTANT: The filtering is done on a best-effort basis, it uses index
+	 * statistics and mappings to rewrite queries to <code>match_none</code> instead
+	 * of fully running the request. For instance a range query over a date field
+	 * can rewrite to <code>match_none</code> if all documents within a shard
+	 * (including deleted documents) are outside of the provided range. However, not
+	 * all queries can rewrite to <code>match_none</code> so this API may return an
+	 * index even if the provided filter matches no document.
 	 * <p>
 	 * API name: {@code index_filter}
 	 */
@@ -211,7 +235,7 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 	}
 
 	/**
-	 * Defines ad-hoc runtime fields in the request similar to the way it is done in
+	 * Define ad-hoc runtime fields in the request similar to the way it is done in
 	 * search requests. These fields exist only as part of the query and take
 	 * precedence over fields defined with the same name in the index mappings.
 	 * <p>
@@ -222,7 +246,9 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 	}
 
 	/**
-	 * Only return results for fields that have one of the types in the list
+	 * A comma-separated list of field types to include. Any fields that do not
+	 * match one of these types will be excluded from the results. It defaults to
+	 * empty, meaning that all field types are returned.
 	 * <p>
 	 * API name: {@code types}
 	 */
@@ -295,6 +321,9 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 		private Boolean ignoreUnavailable;
 
 		@Nullable
+		private Boolean includeEmptyFields;
+
+		@Nullable
 		private Boolean includeUnmapped;
 
 		@Nullable
@@ -324,7 +353,7 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 		}
 
 		/**
-		 * Type of index that wildcard patterns can match. If the request can target
+		 * The type of index that wildcard patterns can match. If the request can target
 		 * data streams, this argument determines whether wildcard expressions match
 		 * hidden data streams. Supports comma-separated values, such as
 		 * <code>open,hidden</code>.
@@ -339,7 +368,7 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 		}
 
 		/**
-		 * Type of index that wildcard patterns can match. If the request can target
+		 * The type of index that wildcard patterns can match. If the request can target
 		 * data streams, this argument determines whether wildcard expressions match
 		 * hidden data streams. Supports comma-separated values, such as
 		 * <code>open,hidden</code>.
@@ -354,7 +383,7 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 		}
 
 		/**
-		 * List of fields to retrieve capabilities for. Wildcard (<code>*</code>)
+		 * A list of fields to retrieve capabilities for. Wildcard (<code>*</code>)
 		 * expressions are supported.
 		 * <p>
 		 * API name: {@code fields}
@@ -367,7 +396,7 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 		}
 
 		/**
-		 * List of fields to retrieve capabilities for. Wildcard (<code>*</code>)
+		 * A list of fields to retrieve capabilities for. Wildcard (<code>*</code>)
 		 * expressions are supported.
 		 * <p>
 		 * API name: {@code fields}
@@ -380,8 +409,7 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 		}
 
 		/**
-		 * An optional set of filters: can include
-		 * +metadata,-metadata,-nested,-multifield,-parent
+		 * A comma-separated list of filters to apply to the response.
 		 * <p>
 		 * API name: {@code filters}
 		 */
@@ -402,6 +430,16 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 		}
 
 		/**
+		 * If false, empty fields are not included in the response.
+		 * <p>
+		 * API name: {@code include_empty_fields}
+		 */
+		public final Builder includeEmptyFields(@Nullable Boolean value) {
+			this.includeEmptyFields = value;
+			return this;
+		}
+
+		/**
 		 * If true, unmapped fields are included in the response.
 		 * <p>
 		 * API name: {@code include_unmapped}
@@ -412,9 +450,9 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 		}
 
 		/**
-		 * Comma-separated list of data streams, indices, and aliases used to limit the
-		 * request. Supports wildcards (*). To target all data streams and indices, omit
-		 * this parameter or use * or _all.
+		 * A comma-separated list of data streams, indices, and aliases used to limit
+		 * the request. Supports wildcards (*). To target all data streams and indices,
+		 * omit this parameter or use * or _all.
 		 * <p>
 		 * API name: {@code index}
 		 * <p>
@@ -426,9 +464,9 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 		}
 
 		/**
-		 * Comma-separated list of data streams, indices, and aliases used to limit the
-		 * request. Supports wildcards (*). To target all data streams and indices, omit
-		 * this parameter or use * or _all.
+		 * A comma-separated list of data streams, indices, and aliases used to limit
+		 * the request. Supports wildcards (*). To target all data streams and indices,
+		 * omit this parameter or use * or _all.
 		 * <p>
 		 * API name: {@code index}
 		 * <p>
@@ -440,8 +478,16 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 		}
 
 		/**
-		 * Allows to filter indices if the provided query rewrites to match_none on
+		 * Filter indices if the provided query rewrites to <code>match_none</code> on
 		 * every shard.
+		 * <p>
+		 * IMPORTANT: The filtering is done on a best-effort basis, it uses index
+		 * statistics and mappings to rewrite queries to <code>match_none</code> instead
+		 * of fully running the request. For instance a range query over a date field
+		 * can rewrite to <code>match_none</code> if all documents within a shard
+		 * (including deleted documents) are outside of the provided range. However, not
+		 * all queries can rewrite to <code>match_none</code> so this API may return an
+		 * index even if the provided filter matches no document.
 		 * <p>
 		 * API name: {@code index_filter}
 		 */
@@ -451,8 +497,16 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 		}
 
 		/**
-		 * Allows to filter indices if the provided query rewrites to match_none on
+		 * Filter indices if the provided query rewrites to <code>match_none</code> on
 		 * every shard.
+		 * <p>
+		 * IMPORTANT: The filtering is done on a best-effort basis, it uses index
+		 * statistics and mappings to rewrite queries to <code>match_none</code> instead
+		 * of fully running the request. For instance a range query over a date field
+		 * can rewrite to <code>match_none</code> if all documents within a shard
+		 * (including deleted documents) are outside of the provided range. However, not
+		 * all queries can rewrite to <code>match_none</code> so this API may return an
+		 * index even if the provided filter matches no document.
 		 * <p>
 		 * API name: {@code index_filter}
 		 */
@@ -461,7 +515,7 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 		}
 
 		/**
-		 * Defines ad-hoc runtime fields in the request similar to the way it is done in
+		 * Define ad-hoc runtime fields in the request similar to the way it is done in
 		 * search requests. These fields exist only as part of the query and take
 		 * precedence over fields defined with the same name in the index mappings.
 		 * <p>
@@ -475,7 +529,7 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 		}
 
 		/**
-		 * Defines ad-hoc runtime fields in the request similar to the way it is done in
+		 * Define ad-hoc runtime fields in the request similar to the way it is done in
 		 * search requests. These fields exist only as part of the query and take
 		 * precedence over fields defined with the same name in the index mappings.
 		 * <p>
@@ -489,7 +543,7 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 		}
 
 		/**
-		 * Defines ad-hoc runtime fields in the request similar to the way it is done in
+		 * Define ad-hoc runtime fields in the request similar to the way it is done in
 		 * search requests. These fields exist only as part of the query and take
 		 * precedence over fields defined with the same name in the index mappings.
 		 * <p>
@@ -503,7 +557,9 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 		}
 
 		/**
-		 * Only return results for fields that have one of the types in the list
+		 * A comma-separated list of field types to include. Any fields that do not
+		 * match one of these types will be excluded from the results. It defaults to
+		 * empty, meaning that all field types are returned.
 		 * <p>
 		 * API name: {@code types}
 		 * <p>
@@ -515,7 +571,9 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 		}
 
 		/**
-		 * Only return results for fields that have one of the types in the list
+		 * A comma-separated list of field types to include. Any fields that do not
+		 * match one of these types will be excluded from the results. It defaults to
+		 * empty, meaning that all field types are returned.
 		 * <p>
 		 * API name: {@code types}
 		 * <p>
@@ -633,6 +691,9 @@ public class FieldCapsRequest extends RequestBase implements JsonpSerializable {
 				}
 				if (request.allowNoIndices != null) {
 					params.put("allow_no_indices", String.valueOf(request.allowNoIndices));
+				}
+				if (request.includeEmptyFields != null) {
+					params.put("include_empty_fields", String.valueOf(request.includeEmptyFields));
 				}
 				if (request.filters != null) {
 					params.put("filters", request.filters);

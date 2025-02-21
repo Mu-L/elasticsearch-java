@@ -20,9 +20,11 @@
 package co.elastic.clients.elasticsearch.security.get_role;
 
 import co.elastic.clients.elasticsearch.security.ApplicationPrivileges;
+import co.elastic.clients.elasticsearch.security.ClusterPrivilege;
 import co.elastic.clients.elasticsearch.security.IndicesPrivileges;
+import co.elastic.clients.elasticsearch.security.RemoteClusterPrivileges;
+import co.elastic.clients.elasticsearch.security.RemoteIndicesPrivileges;
 import co.elastic.clients.elasticsearch.security.RoleTemplate;
-import co.elastic.clients.elasticsearch.security.TransientMetadataConfig;
 import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.JsonpDeserializable;
 import co.elastic.clients.json.JsonpDeserializer;
@@ -70,11 +72,15 @@ public class Role implements JsonpSerializable {
 
 	private final List<IndicesPrivileges> indices;
 
+	private final List<RemoteIndicesPrivileges> remoteIndices;
+
+	private final List<RemoteClusterPrivileges> remoteCluster;
+
 	private final Map<String, JsonData> metadata;
 
 	private final List<String> runAs;
 
-	private final TransientMetadataConfig transientMetadata;
+	private final Map<String, JsonData> transientMetadata;
 
 	private final List<ApplicationPrivileges> applications;
 
@@ -88,9 +94,11 @@ public class Role implements JsonpSerializable {
 
 		this.cluster = ApiTypeHelper.unmodifiableRequired(builder.cluster, this, "cluster");
 		this.indices = ApiTypeHelper.unmodifiableRequired(builder.indices, this, "indices");
+		this.remoteIndices = ApiTypeHelper.unmodifiable(builder.remoteIndices);
+		this.remoteCluster = ApiTypeHelper.unmodifiable(builder.remoteCluster);
 		this.metadata = ApiTypeHelper.unmodifiableRequired(builder.metadata, this, "metadata");
 		this.runAs = ApiTypeHelper.unmodifiableRequired(builder.runAs, this, "runAs");
-		this.transientMetadata = ApiTypeHelper.requireNonNull(builder.transientMetadata, this, "transientMetadata");
+		this.transientMetadata = ApiTypeHelper.unmodifiable(builder.transientMetadata);
 		this.applications = ApiTypeHelper.unmodifiableRequired(builder.applications, this, "applications");
 		this.roleTemplates = ApiTypeHelper.unmodifiable(builder.roleTemplates);
 		this.global = ApiTypeHelper.unmodifiable(builder.global);
@@ -116,6 +124,20 @@ public class Role implements JsonpSerializable {
 	}
 
 	/**
+	 * API name: {@code remote_indices}
+	 */
+	public final List<RemoteIndicesPrivileges> remoteIndices() {
+		return this.remoteIndices;
+	}
+
+	/**
+	 * API name: {@code remote_cluster}
+	 */
+	public final List<RemoteClusterPrivileges> remoteCluster() {
+		return this.remoteCluster;
+	}
+
+	/**
 	 * Required - API name: {@code metadata}
 	 */
 	public final Map<String, JsonData> metadata() {
@@ -130,9 +152,9 @@ public class Role implements JsonpSerializable {
 	}
 
 	/**
-	 * Required - API name: {@code transient_metadata}
+	 * API name: {@code transient_metadata}
 	 */
-	public final TransientMetadataConfig transientMetadata() {
+	public final Map<String, JsonData> transientMetadata() {
 		return this.transientMetadata;
 	}
 
@@ -188,6 +210,26 @@ public class Role implements JsonpSerializable {
 			generator.writeEnd();
 
 		}
+		if (ApiTypeHelper.isDefined(this.remoteIndices)) {
+			generator.writeKey("remote_indices");
+			generator.writeStartArray();
+			for (RemoteIndicesPrivileges item0 : this.remoteIndices) {
+				item0.serialize(generator, mapper);
+
+			}
+			generator.writeEnd();
+
+		}
+		if (ApiTypeHelper.isDefined(this.remoteCluster)) {
+			generator.writeKey("remote_cluster");
+			generator.writeStartArray();
+			for (RemoteClusterPrivileges item0 : this.remoteCluster) {
+				item0.serialize(generator, mapper);
+
+			}
+			generator.writeEnd();
+
+		}
 		if (ApiTypeHelper.isDefined(this.metadata)) {
 			generator.writeKey("metadata");
 			generator.writeStartObject();
@@ -209,9 +251,17 @@ public class Role implements JsonpSerializable {
 			generator.writeEnd();
 
 		}
-		generator.writeKey("transient_metadata");
-		this.transientMetadata.serialize(generator, mapper);
+		if (ApiTypeHelper.isDefined(this.transientMetadata)) {
+			generator.writeKey("transient_metadata");
+			generator.writeStartObject();
+			for (Map.Entry<String, JsonData> item0 : this.transientMetadata.entrySet()) {
+				generator.writeKey(item0.getKey());
+				item0.getValue().serialize(generator, mapper);
 
+			}
+			generator.writeEnd();
+
+		}
 		if (ApiTypeHelper.isDefined(this.applications)) {
 			generator.writeKey("applications");
 			generator.writeStartArray();
@@ -285,11 +335,18 @@ public class Role implements JsonpSerializable {
 
 		private List<IndicesPrivileges> indices;
 
+		@Nullable
+		private List<RemoteIndicesPrivileges> remoteIndices;
+
+		@Nullable
+		private List<RemoteClusterPrivileges> remoteCluster;
+
 		private Map<String, JsonData> metadata;
 
 		private List<String> runAs;
 
-		private TransientMetadataConfig transientMetadata;
+		@Nullable
+		private Map<String, JsonData> transientMetadata;
 
 		private List<ApplicationPrivileges> applications;
 
@@ -349,6 +406,66 @@ public class Role implements JsonpSerializable {
 		}
 
 		/**
+		 * API name: {@code remote_indices}
+		 * <p>
+		 * Adds all elements of <code>list</code> to <code>remoteIndices</code>.
+		 */
+		public final Builder remoteIndices(List<RemoteIndicesPrivileges> list) {
+			this.remoteIndices = _listAddAll(this.remoteIndices, list);
+			return this;
+		}
+
+		/**
+		 * API name: {@code remote_indices}
+		 * <p>
+		 * Adds one or more values to <code>remoteIndices</code>.
+		 */
+		public final Builder remoteIndices(RemoteIndicesPrivileges value, RemoteIndicesPrivileges... values) {
+			this.remoteIndices = _listAdd(this.remoteIndices, value, values);
+			return this;
+		}
+
+		/**
+		 * API name: {@code remote_indices}
+		 * <p>
+		 * Adds a value to <code>remoteIndices</code> using a builder lambda.
+		 */
+		public final Builder remoteIndices(
+				Function<RemoteIndicesPrivileges.Builder, ObjectBuilder<RemoteIndicesPrivileges>> fn) {
+			return remoteIndices(fn.apply(new RemoteIndicesPrivileges.Builder()).build());
+		}
+
+		/**
+		 * API name: {@code remote_cluster}
+		 * <p>
+		 * Adds all elements of <code>list</code> to <code>remoteCluster</code>.
+		 */
+		public final Builder remoteCluster(List<RemoteClusterPrivileges> list) {
+			this.remoteCluster = _listAddAll(this.remoteCluster, list);
+			return this;
+		}
+
+		/**
+		 * API name: {@code remote_cluster}
+		 * <p>
+		 * Adds one or more values to <code>remoteCluster</code>.
+		 */
+		public final Builder remoteCluster(RemoteClusterPrivileges value, RemoteClusterPrivileges... values) {
+			this.remoteCluster = _listAdd(this.remoteCluster, value, values);
+			return this;
+		}
+
+		/**
+		 * API name: {@code remote_cluster}
+		 * <p>
+		 * Adds a value to <code>remoteCluster</code> using a builder lambda.
+		 */
+		public final Builder remoteCluster(
+				Function<RemoteClusterPrivileges.Builder, ObjectBuilder<RemoteClusterPrivileges>> fn) {
+			return remoteCluster(fn.apply(new RemoteClusterPrivileges.Builder()).build());
+		}
+
+		/**
 		 * Required - API name: {@code metadata}
 		 * <p>
 		 * Adds all entries of <code>map</code> to <code>metadata</code>.
@@ -389,19 +506,23 @@ public class Role implements JsonpSerializable {
 		}
 
 		/**
-		 * Required - API name: {@code transient_metadata}
+		 * API name: {@code transient_metadata}
+		 * <p>
+		 * Adds all entries of <code>map</code> to <code>transientMetadata</code>.
 		 */
-		public final Builder transientMetadata(TransientMetadataConfig value) {
-			this.transientMetadata = value;
+		public final Builder transientMetadata(Map<String, JsonData> map) {
+			this.transientMetadata = _mapPutAll(this.transientMetadata, map);
 			return this;
 		}
 
 		/**
-		 * Required - API name: {@code transient_metadata}
+		 * API name: {@code transient_metadata}
+		 * <p>
+		 * Adds an entry to <code>transientMetadata</code>.
 		 */
-		public final Builder transientMetadata(
-				Function<TransientMetadataConfig.Builder, ObjectBuilder<TransientMetadataConfig>> fn) {
-			return this.transientMetadata(fn.apply(new TransientMetadataConfig.Builder()).build());
+		public final Builder transientMetadata(String key, JsonData value) {
+			this.transientMetadata = _mapPut(this.transientMetadata, key, value);
+			return this;
 		}
 
 		/**
@@ -514,9 +635,14 @@ public class Role implements JsonpSerializable {
 		op.add(Builder::cluster, JsonpDeserializer.arrayDeserializer(JsonpDeserializer.stringDeserializer()),
 				"cluster");
 		op.add(Builder::indices, JsonpDeserializer.arrayDeserializer(IndicesPrivileges._DESERIALIZER), "indices");
+		op.add(Builder::remoteIndices, JsonpDeserializer.arrayDeserializer(RemoteIndicesPrivileges._DESERIALIZER),
+				"remote_indices");
+		op.add(Builder::remoteCluster, JsonpDeserializer.arrayDeserializer(RemoteClusterPrivileges._DESERIALIZER),
+				"remote_cluster");
 		op.add(Builder::metadata, JsonpDeserializer.stringMapDeserializer(JsonData._DESERIALIZER), "metadata");
 		op.add(Builder::runAs, JsonpDeserializer.arrayDeserializer(JsonpDeserializer.stringDeserializer()), "run_as");
-		op.add(Builder::transientMetadata, TransientMetadataConfig._DESERIALIZER, "transient_metadata");
+		op.add(Builder::transientMetadata, JsonpDeserializer.stringMapDeserializer(JsonData._DESERIALIZER),
+				"transient_metadata");
 		op.add(Builder::applications, JsonpDeserializer.arrayDeserializer(ApplicationPrivileges._DESERIALIZER),
 				"applications");
 		op.add(Builder::roleTemplates, JsonpDeserializer.arrayDeserializer(RoleTemplate._DESERIALIZER),

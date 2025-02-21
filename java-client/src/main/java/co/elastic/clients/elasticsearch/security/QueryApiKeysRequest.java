@@ -23,7 +23,8 @@ import co.elastic.clients.elasticsearch._types.ErrorResponse;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.RequestBase;
 import co.elastic.clients.elasticsearch._types.SortOptions;
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.security.query_api_keys.ApiKeyAggregation;
+import co.elastic.clients.elasticsearch.security.query_api_keys.ApiKeyQuery;
 import co.elastic.clients.json.JsonpDeserializable;
 import co.elastic.clients.json.JsonpDeserializer;
 import co.elastic.clients.json.JsonpMapper;
@@ -37,6 +38,7 @@ import co.elastic.clients.util.ObjectBuilder;
 import jakarta.json.stream.JsonGenerator;
 import java.lang.Boolean;
 import java.lang.Integer;
+import java.lang.String;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -64,19 +66,31 @@ import javax.annotation.Nullable;
 // typedef: security.query_api_keys.Request
 
 /**
- * Retrieves information for API keys in a paginated manner. You can optionally
+ * Find API keys with a query.
+ * <p>
+ * Get a paginated list of API keys and their information. You can optionally
  * filter the results with a query.
+ * <p>
+ * To use this API, you must have at least the <code>manage_own_api_key</code>
+ * or the <code>read_security</code> cluster privileges. If you have only the
+ * <code>manage_own_api_key</code> privilege, this API returns only the API keys
+ * that you own. If you have the <code>read_security</code>,
+ * <code>manage_api_key</code>, or greater privileges (including
+ * <code>manage_security</code>), this API returns all API keys regardless of
+ * ownership.
  * 
  * @see <a href="../doc-files/api-spec.html#security.query_api_keys.Request">API
  *      specification</a>
  */
 @JsonpDeserializable
 public class QueryApiKeysRequest extends RequestBase implements JsonpSerializable {
+	private final Map<String, ApiKeyAggregation> aggregations;
+
 	@Nullable
 	private final Integer from;
 
 	@Nullable
-	private final Query query;
+	private final ApiKeyQuery query;
 
 	private final List<FieldValue> searchAfter;
 
@@ -88,16 +102,21 @@ public class QueryApiKeysRequest extends RequestBase implements JsonpSerializabl
 	@Nullable
 	private final Boolean withLimitedBy;
 
+	@Nullable
+	private final Boolean withProfileUid;
+
 	// ---------------------------------------------------------------------------------------------
 
 	private QueryApiKeysRequest(Builder builder) {
 
+		this.aggregations = ApiTypeHelper.unmodifiable(builder.aggregations);
 		this.from = builder.from;
 		this.query = builder.query;
 		this.searchAfter = ApiTypeHelper.unmodifiable(builder.searchAfter);
 		this.size = builder.size;
 		this.sort = ApiTypeHelper.unmodifiable(builder.sort);
 		this.withLimitedBy = builder.withLimitedBy;
+		this.withProfileUid = builder.withProfileUid;
 
 	}
 
@@ -106,9 +125,26 @@ public class QueryApiKeysRequest extends RequestBase implements JsonpSerializabl
 	}
 
 	/**
-	 * Starting document offset. By default, you cannot page through more than
-	 * 10,000 hits using the from and size parameters. To page through more hits,
-	 * use the <code>search_after</code> parameter.
+	 * Any aggregations to run over the corpus of returned API keys. Aggregations
+	 * and queries work together. Aggregations are computed only on the API keys
+	 * that match the query. This supports only a subset of aggregation types,
+	 * namely: <code>terms</code>, <code>range</code>, <code>date_range</code>,
+	 * <code>missing</code>, <code>cardinality</code>, <code>value_count</code>,
+	 * <code>composite</code>, <code>filter</code>, and <code>filters</code>.
+	 * Additionally, aggregations only run over the same subset of fields that query
+	 * works with.
+	 * <p>
+	 * API name: {@code aggregations}
+	 */
+	public final Map<String, ApiKeyAggregation> aggregations() {
+		return this.aggregations;
+	}
+
+	/**
+	 * The starting document offset. It must not be negative. By default, you cannot
+	 * page through more than 10,000 hits using the <code>from</code> and
+	 * <code>size</code> parameters. To page through more hits, use the
+	 * <code>search_after</code> parameter.
 	 * <p>
 	 * API name: {@code from}
 	 */
@@ -118,21 +154,33 @@ public class QueryApiKeysRequest extends RequestBase implements JsonpSerializabl
 	}
 
 	/**
-	 * A query to filter which API keys to return. The query supports a subset of
-	 * query types, including <code>match_all</code>, <code>bool</code>,
-	 * <code>term</code>, <code>terms</code>, <code>ids</code>, <code>prefix</code>,
-	 * <code>wildcard</code>, and <code>range</code>. You can query all public
-	 * information associated with an API key.
+	 * A query to filter which API keys to return. If the query parameter is
+	 * missing, it is equivalent to a <code>match_all</code> query. The query
+	 * supports a subset of query types, including <code>match_all</code>,
+	 * <code>bool</code>, <code>term</code>, <code>terms</code>, <code>match</code>,
+	 * <code>ids</code>, <code>prefix</code>, <code>wildcard</code>,
+	 * <code>exists</code>, <code>range</code>, and
+	 * <code>simple_query_string</code>. You can query the following public
+	 * information associated with an API key: <code>id</code>, <code>type</code>,
+	 * <code>name</code>, <code>creation</code>, <code>expiration</code>,
+	 * <code>invalidated</code>, <code>invalidation</code>, <code>username</code>,
+	 * <code>realm</code>, and <code>metadata</code>.
+	 * <p>
+	 * NOTE: The queryable string values associated with API keys are internally
+	 * mapped as keywords. Consequently, if no <code>analyzer</code> parameter is
+	 * specified for a <code>match</code> query, then the provided match query
+	 * string is interpreted as a single keyword value. Such a match query is hence
+	 * equivalent to a <code>term</code> query.
 	 * <p>
 	 * API name: {@code query}
 	 */
 	@Nullable
-	public final Query query() {
+	public final ApiKeyQuery query() {
 		return this.query;
 	}
 
 	/**
-	 * Search after definition
+	 * The search after definition.
 	 * <p>
 	 * API name: {@code search_after}
 	 */
@@ -141,9 +189,12 @@ public class QueryApiKeysRequest extends RequestBase implements JsonpSerializabl
 	}
 
 	/**
-	 * The number of hits to return. By default, you cannot page through more than
-	 * 10,000 hits using the <code>from</code> and <code>size</code> parameters. To
-	 * page through more hits, use the <code>search_after</code> parameter.
+	 * The number of hits to return. It must not be negative. The <code>size</code>
+	 * parameter can be set to <code>0</code>, in which case no API key matches are
+	 * returned, only the aggregation results. By default, you cannot page through
+	 * more than 10,000 hits using the <code>from</code> and <code>size</code>
+	 * parameters. To page through more hits, use the <code>search_after</code>
+	 * parameter.
 	 * <p>
 	 * API name: {@code size}
 	 */
@@ -153,9 +204,9 @@ public class QueryApiKeysRequest extends RequestBase implements JsonpSerializabl
 	}
 
 	/**
-	 * Other than <code>id</code>, all public fields of an API key are eligible for
-	 * sorting. In addition, sort can also be applied to the <code>_doc</code> field
-	 * to sort by index order.
+	 * The sort definition. Other than <code>id</code>, all public fields of an API
+	 * key are eligible for sorting. In addition, sort can also be applied to the
+	 * <code>_doc</code> field to sort by index order.
 	 * <p>
 	 * API name: {@code sort}
 	 */
@@ -166,13 +217,28 @@ public class QueryApiKeysRequest extends RequestBase implements JsonpSerializabl
 	/**
 	 * Return the snapshot of the owner user's role descriptors associated with the
 	 * API key. An API key's actual permission is the intersection of its assigned
-	 * role descriptors and the owner user's role descriptors.
+	 * role descriptors and the owner user's role descriptors (effectively limited
+	 * by it). An API key cannot retrieve any API key’s limited-by role descriptors
+	 * (including itself) unless it has <code>manage_api_key</code> or higher
+	 * privileges.
 	 * <p>
 	 * API name: {@code with_limited_by}
 	 */
 	@Nullable
 	public final Boolean withLimitedBy() {
 		return this.withLimitedBy;
+	}
+
+	/**
+	 * Determines whether to also retrieve the profile UID for the API key owner
+	 * principal. If it exists, the profile UID is returned under the
+	 * <code>profile_uid</code> response field for each API key.
+	 * <p>
+	 * API name: {@code with_profile_uid}
+	 */
+	@Nullable
+	public final Boolean withProfileUid() {
+		return this.withProfileUid;
 	}
 
 	/**
@@ -186,6 +252,17 @@ public class QueryApiKeysRequest extends RequestBase implements JsonpSerializabl
 
 	protected void serializeInternal(JsonGenerator generator, JsonpMapper mapper) {
 
+		if (ApiTypeHelper.isDefined(this.aggregations)) {
+			generator.writeKey("aggregations");
+			generator.writeStartObject();
+			for (Map.Entry<String, ApiKeyAggregation> item0 : this.aggregations.entrySet()) {
+				generator.writeKey(item0.getKey());
+				item0.getValue().serialize(generator, mapper);
+
+			}
+			generator.writeEnd();
+
+		}
 		if (this.from != null) {
 			generator.writeKey("from");
 			generator.write(this.from);
@@ -234,10 +311,13 @@ public class QueryApiKeysRequest extends RequestBase implements JsonpSerializabl
 			implements
 				ObjectBuilder<QueryApiKeysRequest> {
 		@Nullable
+		private Map<String, ApiKeyAggregation> aggregations;
+
+		@Nullable
 		private Integer from;
 
 		@Nullable
-		private Query query;
+		private ApiKeyQuery query;
 
 		@Nullable
 		private List<FieldValue> searchAfter;
@@ -251,10 +331,71 @@ public class QueryApiKeysRequest extends RequestBase implements JsonpSerializabl
 		@Nullable
 		private Boolean withLimitedBy;
 
+		@Nullable
+		private Boolean withProfileUid;
+
 		/**
-		 * Starting document offset. By default, you cannot page through more than
-		 * 10,000 hits using the from and size parameters. To page through more hits,
-		 * use the <code>search_after</code> parameter.
+		 * Any aggregations to run over the corpus of returned API keys. Aggregations
+		 * and queries work together. Aggregations are computed only on the API keys
+		 * that match the query. This supports only a subset of aggregation types,
+		 * namely: <code>terms</code>, <code>range</code>, <code>date_range</code>,
+		 * <code>missing</code>, <code>cardinality</code>, <code>value_count</code>,
+		 * <code>composite</code>, <code>filter</code>, and <code>filters</code>.
+		 * Additionally, aggregations only run over the same subset of fields that query
+		 * works with.
+		 * <p>
+		 * API name: {@code aggregations}
+		 * <p>
+		 * Adds all entries of <code>map</code> to <code>aggregations</code>.
+		 */
+		public final Builder aggregations(Map<String, ApiKeyAggregation> map) {
+			this.aggregations = _mapPutAll(this.aggregations, map);
+			return this;
+		}
+
+		/**
+		 * Any aggregations to run over the corpus of returned API keys. Aggregations
+		 * and queries work together. Aggregations are computed only on the API keys
+		 * that match the query. This supports only a subset of aggregation types,
+		 * namely: <code>terms</code>, <code>range</code>, <code>date_range</code>,
+		 * <code>missing</code>, <code>cardinality</code>, <code>value_count</code>,
+		 * <code>composite</code>, <code>filter</code>, and <code>filters</code>.
+		 * Additionally, aggregations only run over the same subset of fields that query
+		 * works with.
+		 * <p>
+		 * API name: {@code aggregations}
+		 * <p>
+		 * Adds an entry to <code>aggregations</code>.
+		 */
+		public final Builder aggregations(String key, ApiKeyAggregation value) {
+			this.aggregations = _mapPut(this.aggregations, key, value);
+			return this;
+		}
+
+		/**
+		 * Any aggregations to run over the corpus of returned API keys. Aggregations
+		 * and queries work together. Aggregations are computed only on the API keys
+		 * that match the query. This supports only a subset of aggregation types,
+		 * namely: <code>terms</code>, <code>range</code>, <code>date_range</code>,
+		 * <code>missing</code>, <code>cardinality</code>, <code>value_count</code>,
+		 * <code>composite</code>, <code>filter</code>, and <code>filters</code>.
+		 * Additionally, aggregations only run over the same subset of fields that query
+		 * works with.
+		 * <p>
+		 * API name: {@code aggregations}
+		 * <p>
+		 * Adds an entry to <code>aggregations</code> using a builder lambda.
+		 */
+		public final Builder aggregations(String key,
+				Function<ApiKeyAggregation.Builder, ObjectBuilder<ApiKeyAggregation>> fn) {
+			return aggregations(key, fn.apply(new ApiKeyAggregation.Builder()).build());
+		}
+
+		/**
+		 * The starting document offset. It must not be negative. By default, you cannot
+		 * page through more than 10,000 hits using the <code>from</code> and
+		 * <code>size</code> parameters. To page through more hits, use the
+		 * <code>search_after</code> parameter.
 		 * <p>
 		 * API name: {@code from}
 		 */
@@ -264,34 +405,58 @@ public class QueryApiKeysRequest extends RequestBase implements JsonpSerializabl
 		}
 
 		/**
-		 * A query to filter which API keys to return. The query supports a subset of
-		 * query types, including <code>match_all</code>, <code>bool</code>,
-		 * <code>term</code>, <code>terms</code>, <code>ids</code>, <code>prefix</code>,
-		 * <code>wildcard</code>, and <code>range</code>. You can query all public
-		 * information associated with an API key.
+		 * A query to filter which API keys to return. If the query parameter is
+		 * missing, it is equivalent to a <code>match_all</code> query. The query
+		 * supports a subset of query types, including <code>match_all</code>,
+		 * <code>bool</code>, <code>term</code>, <code>terms</code>, <code>match</code>,
+		 * <code>ids</code>, <code>prefix</code>, <code>wildcard</code>,
+		 * <code>exists</code>, <code>range</code>, and
+		 * <code>simple_query_string</code>. You can query the following public
+		 * information associated with an API key: <code>id</code>, <code>type</code>,
+		 * <code>name</code>, <code>creation</code>, <code>expiration</code>,
+		 * <code>invalidated</code>, <code>invalidation</code>, <code>username</code>,
+		 * <code>realm</code>, and <code>metadata</code>.
+		 * <p>
+		 * NOTE: The queryable string values associated with API keys are internally
+		 * mapped as keywords. Consequently, if no <code>analyzer</code> parameter is
+		 * specified for a <code>match</code> query, then the provided match query
+		 * string is interpreted as a single keyword value. Such a match query is hence
+		 * equivalent to a <code>term</code> query.
 		 * <p>
 		 * API name: {@code query}
 		 */
-		public final Builder query(@Nullable Query value) {
+		public final Builder query(@Nullable ApiKeyQuery value) {
 			this.query = value;
 			return this;
 		}
 
 		/**
-		 * A query to filter which API keys to return. The query supports a subset of
-		 * query types, including <code>match_all</code>, <code>bool</code>,
-		 * <code>term</code>, <code>terms</code>, <code>ids</code>, <code>prefix</code>,
-		 * <code>wildcard</code>, and <code>range</code>. You can query all public
-		 * information associated with an API key.
+		 * A query to filter which API keys to return. If the query parameter is
+		 * missing, it is equivalent to a <code>match_all</code> query. The query
+		 * supports a subset of query types, including <code>match_all</code>,
+		 * <code>bool</code>, <code>term</code>, <code>terms</code>, <code>match</code>,
+		 * <code>ids</code>, <code>prefix</code>, <code>wildcard</code>,
+		 * <code>exists</code>, <code>range</code>, and
+		 * <code>simple_query_string</code>. You can query the following public
+		 * information associated with an API key: <code>id</code>, <code>type</code>,
+		 * <code>name</code>, <code>creation</code>, <code>expiration</code>,
+		 * <code>invalidated</code>, <code>invalidation</code>, <code>username</code>,
+		 * <code>realm</code>, and <code>metadata</code>.
+		 * <p>
+		 * NOTE: The queryable string values associated with API keys are internally
+		 * mapped as keywords. Consequently, if no <code>analyzer</code> parameter is
+		 * specified for a <code>match</code> query, then the provided match query
+		 * string is interpreted as a single keyword value. Such a match query is hence
+		 * equivalent to a <code>term</code> query.
 		 * <p>
 		 * API name: {@code query}
 		 */
-		public final Builder query(Function<Query.Builder, ObjectBuilder<Query>> fn) {
-			return this.query(fn.apply(new Query.Builder()).build());
+		public final Builder query(Function<ApiKeyQuery.Builder, ObjectBuilder<ApiKeyQuery>> fn) {
+			return this.query(fn.apply(new ApiKeyQuery.Builder()).build());
 		}
 
 		/**
-		 * Search after definition
+		 * The search after definition.
 		 * <p>
 		 * API name: {@code search_after}
 		 * <p>
@@ -303,7 +468,7 @@ public class QueryApiKeysRequest extends RequestBase implements JsonpSerializabl
 		}
 
 		/**
-		 * Search after definition
+		 * The search after definition.
 		 * <p>
 		 * API name: {@code search_after}
 		 * <p>
@@ -315,7 +480,7 @@ public class QueryApiKeysRequest extends RequestBase implements JsonpSerializabl
 		}
 
 		/**
-		 * Search after definition
+		 * The search after definition.
 		 * <p>
 		 * API name: {@code search_after}
 		 * <p>
@@ -332,7 +497,7 @@ public class QueryApiKeysRequest extends RequestBase implements JsonpSerializabl
 		}
 
 		/**
-		 * Search after definition
+		 * The search after definition.
 		 * <p>
 		 * API name: {@code search_after}
 		 * <p>
@@ -349,7 +514,7 @@ public class QueryApiKeysRequest extends RequestBase implements JsonpSerializabl
 		}
 
 		/**
-		 * Search after definition
+		 * The search after definition.
 		 * <p>
 		 * API name: {@code search_after}
 		 * <p>
@@ -366,7 +531,7 @@ public class QueryApiKeysRequest extends RequestBase implements JsonpSerializabl
 		}
 
 		/**
-		 * Search after definition
+		 * The search after definition.
 		 * <p>
 		 * API name: {@code search_after}
 		 * <p>
@@ -383,7 +548,7 @@ public class QueryApiKeysRequest extends RequestBase implements JsonpSerializabl
 		}
 
 		/**
-		 * Search after definition
+		 * The search after definition.
 		 * <p>
 		 * API name: {@code search_after}
 		 * <p>
@@ -394,9 +559,12 @@ public class QueryApiKeysRequest extends RequestBase implements JsonpSerializabl
 		}
 
 		/**
-		 * The number of hits to return. By default, you cannot page through more than
-		 * 10,000 hits using the <code>from</code> and <code>size</code> parameters. To
-		 * page through more hits, use the <code>search_after</code> parameter.
+		 * The number of hits to return. It must not be negative. The <code>size</code>
+		 * parameter can be set to <code>0</code>, in which case no API key matches are
+		 * returned, only the aggregation results. By default, you cannot page through
+		 * more than 10,000 hits using the <code>from</code> and <code>size</code>
+		 * parameters. To page through more hits, use the <code>search_after</code>
+		 * parameter.
 		 * <p>
 		 * API name: {@code size}
 		 */
@@ -406,9 +574,9 @@ public class QueryApiKeysRequest extends RequestBase implements JsonpSerializabl
 		}
 
 		/**
-		 * Other than <code>id</code>, all public fields of an API key are eligible for
-		 * sorting. In addition, sort can also be applied to the <code>_doc</code> field
-		 * to sort by index order.
+		 * The sort definition. Other than <code>id</code>, all public fields of an API
+		 * key are eligible for sorting. In addition, sort can also be applied to the
+		 * <code>_doc</code> field to sort by index order.
 		 * <p>
 		 * API name: {@code sort}
 		 * <p>
@@ -420,9 +588,9 @@ public class QueryApiKeysRequest extends RequestBase implements JsonpSerializabl
 		}
 
 		/**
-		 * Other than <code>id</code>, all public fields of an API key are eligible for
-		 * sorting. In addition, sort can also be applied to the <code>_doc</code> field
-		 * to sort by index order.
+		 * The sort definition. Other than <code>id</code>, all public fields of an API
+		 * key are eligible for sorting. In addition, sort can also be applied to the
+		 * <code>_doc</code> field to sort by index order.
 		 * <p>
 		 * API name: {@code sort}
 		 * <p>
@@ -434,9 +602,9 @@ public class QueryApiKeysRequest extends RequestBase implements JsonpSerializabl
 		}
 
 		/**
-		 * Other than <code>id</code>, all public fields of an API key are eligible for
-		 * sorting. In addition, sort can also be applied to the <code>_doc</code> field
-		 * to sort by index order.
+		 * The sort definition. Other than <code>id</code>, all public fields of an API
+		 * key are eligible for sorting. In addition, sort can also be applied to the
+		 * <code>_doc</code> field to sort by index order.
 		 * <p>
 		 * API name: {@code sort}
 		 * <p>
@@ -449,12 +617,27 @@ public class QueryApiKeysRequest extends RequestBase implements JsonpSerializabl
 		/**
 		 * Return the snapshot of the owner user's role descriptors associated with the
 		 * API key. An API key's actual permission is the intersection of its assigned
-		 * role descriptors and the owner user's role descriptors.
+		 * role descriptors and the owner user's role descriptors (effectively limited
+		 * by it). An API key cannot retrieve any API key’s limited-by role descriptors
+		 * (including itself) unless it has <code>manage_api_key</code> or higher
+		 * privileges.
 		 * <p>
 		 * API name: {@code with_limited_by}
 		 */
 		public final Builder withLimitedBy(@Nullable Boolean value) {
 			this.withLimitedBy = value;
+			return this;
+		}
+
+		/**
+		 * Determines whether to also retrieve the profile UID for the API key owner
+		 * principal. If it exists, the profile UID is returned under the
+		 * <code>profile_uid</code> response field for each API key.
+		 * <p>
+		 * API name: {@code with_profile_uid}
+		 */
+		public final Builder withProfileUid(@Nullable Boolean value) {
+			this.withProfileUid = value;
 			return this;
 		}
 
@@ -486,8 +669,10 @@ public class QueryApiKeysRequest extends RequestBase implements JsonpSerializabl
 
 	protected static void setupQueryApiKeysRequestDeserializer(ObjectDeserializer<QueryApiKeysRequest.Builder> op) {
 
+		op.add(Builder::aggregations, JsonpDeserializer.stringMapDeserializer(ApiKeyAggregation._DESERIALIZER),
+				"aggregations", "aggs");
 		op.add(Builder::from, JsonpDeserializer.integerDeserializer(), "from");
-		op.add(Builder::query, Query._DESERIALIZER, "query");
+		op.add(Builder::query, ApiKeyQuery._DESERIALIZER, "query");
 		op.add(Builder::searchAfter, JsonpDeserializer.arrayDeserializer(FieldValue._DESERIALIZER), "search_after");
 		op.add(Builder::size, JsonpDeserializer.integerDeserializer(), "size");
 		op.add(Builder::sort, JsonpDeserializer.arrayDeserializer(SortOptions._DESERIALIZER), "sort");
@@ -522,6 +707,10 @@ public class QueryApiKeysRequest extends RequestBase implements JsonpSerializabl
 			// Request parameters
 			request -> {
 				Map<String, String> params = new HashMap<>();
+				params.put("typed_keys", "true");
+				if (request.withProfileUid != null) {
+					params.put("with_profile_uid", String.valueOf(request.withProfileUid));
+				}
 				if (request.withLimitedBy != null) {
 					params.put("with_limited_by", String.valueOf(request.withLimitedBy));
 				}

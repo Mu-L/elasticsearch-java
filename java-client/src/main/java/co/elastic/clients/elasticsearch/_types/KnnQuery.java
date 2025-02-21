@@ -20,19 +20,18 @@
 package co.elastic.clients.elasticsearch._types;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.QueryBase;
+import co.elastic.clients.elasticsearch._types.query_dsl.QueryVariant;
 import co.elastic.clients.json.JsonpDeserializable;
 import co.elastic.clients.json.JsonpDeserializer;
 import co.elastic.clients.json.JsonpMapper;
-import co.elastic.clients.json.JsonpSerializable;
-import co.elastic.clients.json.JsonpUtils;
 import co.elastic.clients.json.ObjectBuilderDeserializer;
 import co.elastic.clients.json.ObjectDeserializer;
 import co.elastic.clients.util.ApiTypeHelper;
 import co.elastic.clients.util.ObjectBuilder;
-import co.elastic.clients.util.WithJsonObjectBuilderBase;
 import jakarta.json.stream.JsonGenerator;
 import java.lang.Float;
-import java.lang.Long;
+import java.lang.Integer;
 import java.lang.String;
 import java.util.List;
 import java.util.Objects;
@@ -62,7 +61,7 @@ import javax.annotation.Nullable;
  *      specification</a>
  */
 @JsonpDeserializable
-public class KnnQuery implements JsonpSerializable {
+public class KnnQuery extends QueryBase implements QueryVariant {
 	private final String field;
 
 	private final List<Float> queryVector;
@@ -70,35 +69,46 @@ public class KnnQuery implements JsonpSerializable {
 	@Nullable
 	private final QueryVectorBuilder queryVectorBuilder;
 
-	private final long k;
-
-	private final long numCandidates;
+	@Nullable
+	private final Integer numCandidates;
 
 	@Nullable
-	private final Float boost;
+	private final Integer k;
 
 	private final List<Query> filter;
 
 	@Nullable
 	private final Float similarity;
 
+	@Nullable
+	private final RescoreVector rescoreVector;
+
 	// ---------------------------------------------------------------------------------------------
 
 	private KnnQuery(Builder builder) {
+		super(builder);
 
 		this.field = ApiTypeHelper.requireNonNull(builder.field, this, "field");
 		this.queryVector = ApiTypeHelper.unmodifiable(builder.queryVector);
 		this.queryVectorBuilder = builder.queryVectorBuilder;
-		this.k = ApiTypeHelper.requireNonNull(builder.k, this, "k");
-		this.numCandidates = ApiTypeHelper.requireNonNull(builder.numCandidates, this, "numCandidates");
-		this.boost = builder.boost;
+		this.numCandidates = builder.numCandidates;
+		this.k = builder.k;
 		this.filter = ApiTypeHelper.unmodifiable(builder.filter);
 		this.similarity = builder.similarity;
+		this.rescoreVector = builder.rescoreVector;
 
 	}
 
 	public static KnnQuery of(Function<Builder, ObjectBuilder<KnnQuery>> fn) {
 		return fn.apply(new Builder()).build();
+	}
+
+	/**
+	 * Query variant kind.
+	 */
+	@Override
+	public Query.Kind _queryKind() {
+		return Query.Kind.Knn;
 	}
 
 	/**
@@ -131,31 +141,23 @@ public class KnnQuery implements JsonpSerializable {
 	}
 
 	/**
-	 * Required - The final number of nearest neighbors to return as top hits
-	 * <p>
-	 * API name: {@code k}
-	 */
-	public final long k() {
-		return this.k;
-	}
-
-	/**
-	 * Required - The number of nearest neighbor candidates to consider per shard
+	 * The number of nearest neighbor candidates to consider per shard
 	 * <p>
 	 * API name: {@code num_candidates}
 	 */
-	public final long numCandidates() {
+	@Nullable
+	public final Integer numCandidates() {
 		return this.numCandidates;
 	}
 
 	/**
-	 * Boost value to apply to kNN scores
+	 * The final number of nearest neighbors to return as top hits
 	 * <p>
-	 * API name: {@code boost}
+	 * API name: {@code k}
 	 */
 	@Nullable
-	public final Float boost() {
-		return this.boost;
+	public final Integer k() {
+		return this.k;
 	}
 
 	/**
@@ -178,16 +180,18 @@ public class KnnQuery implements JsonpSerializable {
 	}
 
 	/**
-	 * Serialize this object to JSON.
+	 * Apply oversampling and rescoring to quantized vectors *
+	 * <p>
+	 * API name: {@code rescore_vector}
 	 */
-	public void serialize(JsonGenerator generator, JsonpMapper mapper) {
-		generator.writeStartObject();
-		serializeInternal(generator, mapper);
-		generator.writeEnd();
+	@Nullable
+	public final RescoreVector rescoreVector() {
+		return this.rescoreVector;
 	}
 
 	protected void serializeInternal(JsonGenerator generator, JsonpMapper mapper) {
 
+		super.serializeInternal(generator, mapper);
 		generator.writeKey("field");
 		generator.write(this.field);
 
@@ -206,15 +210,14 @@ public class KnnQuery implements JsonpSerializable {
 			this.queryVectorBuilder.serialize(generator, mapper);
 
 		}
-		generator.writeKey("k");
-		generator.write(this.k);
+		if (this.numCandidates != null) {
+			generator.writeKey("num_candidates");
+			generator.write(this.numCandidates);
 
-		generator.writeKey("num_candidates");
-		generator.write(this.numCandidates);
-
-		if (this.boost != null) {
-			generator.writeKey("boost");
-			generator.write(this.boost);
+		}
+		if (this.k != null) {
+			generator.writeKey("k");
+			generator.write(this.k);
 
 		}
 		if (ApiTypeHelper.isDefined(this.filter)) {
@@ -232,12 +235,12 @@ public class KnnQuery implements JsonpSerializable {
 			generator.write(this.similarity);
 
 		}
+		if (this.rescoreVector != null) {
+			generator.writeKey("rescore_vector");
+			this.rescoreVector.serialize(generator, mapper);
 
-	}
+		}
 
-	@Override
-	public String toString() {
-		return JsonpUtils.toString(this);
 	}
 
 	// ---------------------------------------------------------------------------------------------
@@ -246,7 +249,7 @@ public class KnnQuery implements JsonpSerializable {
 	 * Builder for {@link KnnQuery}.
 	 */
 
-	public static class Builder extends WithJsonObjectBuilderBase<Builder> implements ObjectBuilder<KnnQuery> {
+	public static class Builder extends QueryBase.AbstractBuilder<Builder> implements ObjectBuilder<KnnQuery> {
 		private String field;
 
 		@Nullable
@@ -255,18 +258,20 @@ public class KnnQuery implements JsonpSerializable {
 		@Nullable
 		private QueryVectorBuilder queryVectorBuilder;
 
-		private Long k;
-
-		private Long numCandidates;
+		@Nullable
+		private Integer numCandidates;
 
 		@Nullable
-		private Float boost;
+		private Integer k;
 
 		@Nullable
 		private List<Query> filter;
 
 		@Nullable
 		private Float similarity;
+
+		@Nullable
+		private RescoreVector rescoreVector;
 
 		/**
 		 * Required - The name of the vector field to search against
@@ -325,32 +330,22 @@ public class KnnQuery implements JsonpSerializable {
 		}
 
 		/**
-		 * Required - The final number of nearest neighbors to return as top hits
-		 * <p>
-		 * API name: {@code k}
-		 */
-		public final Builder k(long value) {
-			this.k = value;
-			return this;
-		}
-
-		/**
-		 * Required - The number of nearest neighbor candidates to consider per shard
+		 * The number of nearest neighbor candidates to consider per shard
 		 * <p>
 		 * API name: {@code num_candidates}
 		 */
-		public final Builder numCandidates(long value) {
+		public final Builder numCandidates(@Nullable Integer value) {
 			this.numCandidates = value;
 			return this;
 		}
 
 		/**
-		 * Boost value to apply to kNN scores
+		 * The final number of nearest neighbors to return as top hits
 		 * <p>
-		 * API name: {@code boost}
+		 * API name: {@code k}
 		 */
-		public final Builder boost(@Nullable Float value) {
-			this.boost = value;
+		public final Builder k(@Nullable Integer value) {
+			this.k = value;
 			return this;
 		}
 
@@ -399,6 +394,25 @@ public class KnnQuery implements JsonpSerializable {
 			return this;
 		}
 
+		/**
+		 * Apply oversampling and rescoring to quantized vectors *
+		 * <p>
+		 * API name: {@code rescore_vector}
+		 */
+		public final Builder rescoreVector(@Nullable RescoreVector value) {
+			this.rescoreVector = value;
+			return this;
+		}
+
+		/**
+		 * Apply oversampling and rescoring to quantized vectors *
+		 * <p>
+		 * API name: {@code rescore_vector}
+		 */
+		public final Builder rescoreVector(Function<RescoreVector.Builder, ObjectBuilder<RescoreVector>> fn) {
+			return this.rescoreVector(fn.apply(new RescoreVector.Builder()).build());
+		}
+
 		@Override
 		protected Builder self() {
 			return this;
@@ -426,16 +440,16 @@ public class KnnQuery implements JsonpSerializable {
 			KnnQuery::setupKnnQueryDeserializer);
 
 	protected static void setupKnnQueryDeserializer(ObjectDeserializer<KnnQuery.Builder> op) {
-
+		QueryBase.setupQueryBaseDeserializer(op);
 		op.add(Builder::field, JsonpDeserializer.stringDeserializer(), "field");
 		op.add(Builder::queryVector, JsonpDeserializer.arrayDeserializer(JsonpDeserializer.floatDeserializer()),
 				"query_vector");
 		op.add(Builder::queryVectorBuilder, QueryVectorBuilder._DESERIALIZER, "query_vector_builder");
-		op.add(Builder::k, JsonpDeserializer.longDeserializer(), "k");
-		op.add(Builder::numCandidates, JsonpDeserializer.longDeserializer(), "num_candidates");
-		op.add(Builder::boost, JsonpDeserializer.floatDeserializer(), "boost");
+		op.add(Builder::numCandidates, JsonpDeserializer.integerDeserializer(), "num_candidates");
+		op.add(Builder::k, JsonpDeserializer.integerDeserializer(), "k");
 		op.add(Builder::filter, JsonpDeserializer.arrayDeserializer(Query._DESERIALIZER), "filter");
 		op.add(Builder::similarity, JsonpDeserializer.floatDeserializer(), "similarity");
+		op.add(Builder::rescoreVector, RescoreVector._DESERIALIZER, "rescore_vector");
 
 	}
 

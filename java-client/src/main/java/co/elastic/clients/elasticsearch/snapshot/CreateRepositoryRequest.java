@@ -33,6 +33,7 @@ import co.elastic.clients.transport.endpoints.SimpleEndpoint;
 import co.elastic.clients.util.ApiTypeHelper;
 import co.elastic.clients.util.ObjectBuilder;
 import jakarta.json.stream.JsonGenerator;
+import jakarta.json.stream.JsonParser;
 import java.lang.Boolean;
 import java.lang.String;
 import java.util.HashMap;
@@ -59,7 +60,17 @@ import javax.annotation.Nullable;
 // typedef: snapshot.create_repository.Request
 
 /**
- * Creates a repository.
+ * Create or update a snapshot repository. IMPORTANT: If you are migrating
+ * searchable snapshots, the repository name must be identical in the source and
+ * destination clusters. To register a snapshot repository, the cluster's global
+ * metadata must be writeable. Ensure there are no cluster blocks (for example,
+ * <code>cluster.blocks.read_only</code> and
+ * <code>clsuter.blocks.read_only_allow_delete</code> settings) that prevent
+ * write access.
+ * <p>
+ * Several options for this API can be specified using a query parameter or a
+ * request body parameter. If both parameters are specified, only the query
+ * parameter is used.
  * 
  * @see <a href=
  *      "../doc-files/api-spec.html#snapshot.create_repository.Request">API
@@ -73,17 +84,12 @@ public class CreateRepositoryRequest extends RequestBase implements JsonpSeriali
 	private final String name;
 
 	@Nullable
-	private final Repository repository;
-
-	private final RepositorySettings settings;
-
-	@Nullable
 	private final Time timeout;
-
-	private final String type;
 
 	@Nullable
 	private final Boolean verify;
+
+	private final Repository repository;
 
 	// ---------------------------------------------------------------------------------------------
 
@@ -91,11 +97,9 @@ public class CreateRepositoryRequest extends RequestBase implements JsonpSeriali
 
 		this.masterTimeout = builder.masterTimeout;
 		this.name = ApiTypeHelper.requireNonNull(builder.name, this, "name");
-		this.repository = builder.repository;
-		this.settings = ApiTypeHelper.requireNonNull(builder.settings, this, "settings");
 		this.timeout = builder.timeout;
-		this.type = ApiTypeHelper.requireNonNull(builder.type, this, "type");
 		this.verify = builder.verify;
+		this.repository = ApiTypeHelper.requireNonNull(builder.repository, this, "repository");
 
 	}
 
@@ -104,7 +108,9 @@ public class CreateRepositoryRequest extends RequestBase implements JsonpSeriali
 	}
 
 	/**
-	 * Explicit operation timeout for connection to master node
+	 * The period to wait for the master node. If the master node is not available
+	 * before the timeout expires, the request fails and returns an error. To
+	 * indicate that the request should never timeout, set it to <code>-1</code>.
 	 * <p>
 	 * API name: {@code master_timeout}
 	 */
@@ -114,7 +120,7 @@ public class CreateRepositoryRequest extends RequestBase implements JsonpSeriali
 	}
 
 	/**
-	 * Required - A repository name
+	 * Required - The name of the snapshot repository to register or update.
 	 * <p>
 	 * API name: {@code repository}
 	 */
@@ -123,22 +129,11 @@ public class CreateRepositoryRequest extends RequestBase implements JsonpSeriali
 	}
 
 	/**
-	 * API name: {@code repository}
-	 */
-	@Nullable
-	public final Repository repository() {
-		return this.repository;
-	}
-
-	/**
-	 * Required - API name: {@code settings}
-	 */
-	public final RepositorySettings settings() {
-		return this.settings;
-	}
-
-	/**
-	 * Explicit operation timeout
+	 * The period to wait for a response from all relevant nodes in the cluster
+	 * after updating the cluster metadata. If no response is received before the
+	 * timeout expires, the cluster metadata update still applies but the response
+	 * will indicate that it was not completely acknowledged. To indicate that the
+	 * request should never timeout, set it to <code>-1</code>.
 	 * <p>
 	 * API name: {@code timeout}
 	 */
@@ -148,14 +143,10 @@ public class CreateRepositoryRequest extends RequestBase implements JsonpSeriali
 	}
 
 	/**
-	 * Required - API name: {@code type}
-	 */
-	public final String type() {
-		return this.type;
-	}
-
-	/**
-	 * Whether to verify the repository after creation
+	 * If <code>true</code>, the request verifies the repository is functional on
+	 * all master and data nodes in the cluster. If <code>false</code>, this
+	 * verification is skipped. You can also perform this verification with the
+	 * verify snapshot repository API.
 	 * <p>
 	 * API name: {@code verify}
 	 */
@@ -165,26 +156,17 @@ public class CreateRepositoryRequest extends RequestBase implements JsonpSeriali
 	}
 
 	/**
-	 * Serialize this object to JSON.
+	 * Required - Request body.
 	 */
-	public void serialize(JsonGenerator generator, JsonpMapper mapper) {
-		generator.writeStartObject();
-		serializeInternal(generator, mapper);
-		generator.writeEnd();
+	public final Repository repository() {
+		return this.repository;
 	}
 
-	protected void serializeInternal(JsonGenerator generator, JsonpMapper mapper) {
-
-		if (this.repository != null) {
-			generator.writeKey("repository");
-			this.repository.serialize(generator, mapper);
-
-		}
-		generator.writeKey("settings");
-		this.settings.serialize(generator, mapper);
-
-		generator.writeKey("type");
-		generator.write(this.type);
+	/**
+	 * Serialize this value to JSON.
+	 */
+	public void serialize(JsonGenerator generator, JsonpMapper mapper) {
+		this.repository.serialize(generator, mapper);
 
 	}
 
@@ -203,20 +185,17 @@ public class CreateRepositoryRequest extends RequestBase implements JsonpSeriali
 		private String name;
 
 		@Nullable
-		private Repository repository;
-
-		private RepositorySettings settings;
-
-		@Nullable
 		private Time timeout;
-
-		private String type;
 
 		@Nullable
 		private Boolean verify;
 
+		private Repository repository;
+
 		/**
-		 * Explicit operation timeout for connection to master node
+		 * The period to wait for the master node. If the master node is not available
+		 * before the timeout expires, the request fails and returns an error. To
+		 * indicate that the request should never timeout, set it to <code>-1</code>.
 		 * <p>
 		 * API name: {@code master_timeout}
 		 */
@@ -226,7 +205,9 @@ public class CreateRepositoryRequest extends RequestBase implements JsonpSeriali
 		}
 
 		/**
-		 * Explicit operation timeout for connection to master node
+		 * The period to wait for the master node. If the master node is not available
+		 * before the timeout expires, the request fails and returns an error. To
+		 * indicate that the request should never timeout, set it to <code>-1</code>.
 		 * <p>
 		 * API name: {@code master_timeout}
 		 */
@@ -235,7 +216,7 @@ public class CreateRepositoryRequest extends RequestBase implements JsonpSeriali
 		}
 
 		/**
-		 * Required - A repository name
+		 * Required - The name of the snapshot repository to register or update.
 		 * <p>
 		 * API name: {@code repository}
 		 */
@@ -245,37 +226,11 @@ public class CreateRepositoryRequest extends RequestBase implements JsonpSeriali
 		}
 
 		/**
-		 * API name: {@code repository}
-		 */
-		public final Builder repository(@Nullable Repository value) {
-			this.repository = value;
-			return this;
-		}
-
-		/**
-		 * API name: {@code repository}
-		 */
-		public final Builder repository(Function<Repository.Builder, ObjectBuilder<Repository>> fn) {
-			return this.repository(fn.apply(new Repository.Builder()).build());
-		}
-
-		/**
-		 * Required - API name: {@code settings}
-		 */
-		public final Builder settings(RepositorySettings value) {
-			this.settings = value;
-			return this;
-		}
-
-		/**
-		 * Required - API name: {@code settings}
-		 */
-		public final Builder settings(Function<RepositorySettings.Builder, ObjectBuilder<RepositorySettings>> fn) {
-			return this.settings(fn.apply(new RepositorySettings.Builder()).build());
-		}
-
-		/**
-		 * Explicit operation timeout
+		 * The period to wait for a response from all relevant nodes in the cluster
+		 * after updating the cluster metadata. If no response is received before the
+		 * timeout expires, the cluster metadata update still applies but the response
+		 * will indicate that it was not completely acknowledged. To indicate that the
+		 * request should never timeout, set it to <code>-1</code>.
 		 * <p>
 		 * API name: {@code timeout}
 		 */
@@ -285,7 +240,11 @@ public class CreateRepositoryRequest extends RequestBase implements JsonpSeriali
 		}
 
 		/**
-		 * Explicit operation timeout
+		 * The period to wait for a response from all relevant nodes in the cluster
+		 * after updating the cluster metadata. If no response is received before the
+		 * timeout expires, the cluster metadata update still applies but the response
+		 * will indicate that it was not completely acknowledged. To indicate that the
+		 * request should never timeout, set it to <code>-1</code>.
 		 * <p>
 		 * API name: {@code timeout}
 		 */
@@ -294,21 +253,39 @@ public class CreateRepositoryRequest extends RequestBase implements JsonpSeriali
 		}
 
 		/**
-		 * Required - API name: {@code type}
-		 */
-		public final Builder type(String value) {
-			this.type = value;
-			return this;
-		}
-
-		/**
-		 * Whether to verify the repository after creation
+		 * If <code>true</code>, the request verifies the repository is functional on
+		 * all master and data nodes in the cluster. If <code>false</code>, this
+		 * verification is skipped. You can also perform this verification with the
+		 * verify snapshot repository API.
 		 * <p>
 		 * API name: {@code verify}
 		 */
 		public final Builder verify(@Nullable Boolean value) {
 			this.verify = value;
 			return this;
+		}
+
+		/**
+		 * Required - Request body.
+		 */
+		public final Builder repository(Repository value) {
+			this.repository = value;
+			return this;
+		}
+
+		/**
+		 * Required - Request body.
+		 */
+		public final Builder repository(Function<Repository.Builder, ObjectBuilder<Repository>> fn) {
+			return this.repository(fn.apply(new Repository.Builder()).build());
+		}
+
+		@Override
+		public Builder withJson(JsonParser parser, JsonpMapper mapper) {
+
+			@SuppressWarnings("unchecked")
+			Repository value = (Repository) Repository._DESERIALIZER.deserialize(parser, mapper);
+			return this.repository(value);
 		}
 
 		@Override
@@ -329,21 +306,13 @@ public class CreateRepositoryRequest extends RequestBase implements JsonpSeriali
 		}
 	}
 
-	// ---------------------------------------------------------------------------------------------
+	public static final JsonpDeserializer<CreateRepositoryRequest> _DESERIALIZER = createCreateRepositoryRequestDeserializer();
+	protected static JsonpDeserializer<CreateRepositoryRequest> createCreateRepositoryRequestDeserializer() {
 
-	/**
-	 * Json deserializer for {@link CreateRepositoryRequest}
-	 */
-	public static final JsonpDeserializer<CreateRepositoryRequest> _DESERIALIZER = ObjectBuilderDeserializer
-			.lazy(Builder::new, CreateRepositoryRequest::setupCreateRepositoryRequestDeserializer);
+		JsonpDeserializer<Repository> valueDeserializer = Repository._DESERIALIZER;
 
-	protected static void setupCreateRepositoryRequestDeserializer(
-			ObjectDeserializer<CreateRepositoryRequest.Builder> op) {
-
-		op.add(Builder::repository, Repository._DESERIALIZER, "repository");
-		op.add(Builder::settings, RepositorySettings._DESERIALIZER, "settings");
-		op.add(Builder::type, JsonpDeserializer.stringDeserializer(), "type");
-
+		return JsonpDeserializer.of(valueDeserializer.acceptedEvents(), (parser, mapper, event) -> new Builder()
+				.repository(valueDeserializer.deserialize(parser, mapper, event)).build());
 	}
 
 	// ---------------------------------------------------------------------------------------------

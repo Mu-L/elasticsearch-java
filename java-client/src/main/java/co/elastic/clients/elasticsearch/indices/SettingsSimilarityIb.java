@@ -61,7 +61,7 @@ import javax.annotation.Nullable;
  *      specification</a>
  */
 @JsonpDeserializable
-public class SettingsSimilarityIb implements JsonpSerializable {
+public class SettingsSimilarityIb implements SettingsSimilarityVariant, JsonpSerializable {
 	private final IBDistribution distribution;
 
 	private final IBLambda lambda;
@@ -80,6 +80,14 @@ public class SettingsSimilarityIb implements JsonpSerializable {
 
 	public static SettingsSimilarityIb of(Function<Builder, ObjectBuilder<SettingsSimilarityIb>> fn) {
 		return fn.apply(new Builder()).build();
+	}
+
+	/**
+	 * SettingsSimilarity variant kind.
+	 */
+	@Override
+	public SettingsSimilarity.Kind _settingsSimilarityKind() {
+		return SettingsSimilarity.Kind.Ib;
 	}
 
 	/**
@@ -113,6 +121,8 @@ public class SettingsSimilarityIb implements JsonpSerializable {
 	}
 
 	protected void serializeInternal(JsonGenerator generator, JsonpMapper mapper) {
+
+		generator.write("type", "IB");
 
 		generator.writeKey("distribution");
 		this.distribution.serialize(generator, mapper);
@@ -199,6 +209,7 @@ public class SettingsSimilarityIb implements JsonpSerializable {
 		op.add(Builder::lambda, IBLambda._DESERIALIZER, "lambda");
 		op.add(Builder::normalization, Normalization._DESERIALIZER, "normalization");
 
+		op.ignore("type");
 	}
 
 }
