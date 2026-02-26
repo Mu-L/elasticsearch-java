@@ -98,8 +98,6 @@ jobs:
             git push origin tag v${{ inputs.version }}
             echo ${{ inputs.next_version }} > config/version.txt
             sed -i '/static final String VERSION/s/".*"/"${{ inputs.next_version }}"/' java-client/src/main-flavored/java/co/elastic/clients/transport/VersionInfo.java
-            git commit -m "bump version" -a
-            git push origin ${{ inputs.branch }}
             target_branch="version-bump-to-${{ inputs.next_version }}"
             git checkout -B "$target_branch"
             git add -A
