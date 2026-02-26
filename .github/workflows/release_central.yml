@@ -84,8 +84,6 @@ jobs:
 
       - name: Tag branch ${{ inputs.branch }} with release ${{ inputs.version }}, bump version with new release ${{ inputs.version }}
         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
-        env:
-          GH_TOKEN: ${{ steps.fetch-ephemeral-token.outputs.token }}
         with:
           repository: elastic/elasticsearch-java
           token: ${{ steps.fetch-ephemeral-token.outputs.token }}
@@ -105,11 +103,6 @@ jobs:
             git add -A
             git commit -m "bump version"
             git push --force origin "$target_branch"
-            gh pr create \
-              --head "target_branch" \
-              --base "${{ inputs.branch }}" \
-              --title "Bump version from ${{ inputs.prev_version }} to ${{ inputs.next_version }}" \
-              --body "As titled."
 
       - name: Creates new github release with version ${{ inputs.version }}
         uses: softprops/action-gh-release@v2
