@@ -100,9 +100,6 @@ jobs:
             sed -i '/static final String VERSION/s/".*"/"${{ inputs.next_version }}"/' java-client/src/main-flavored/java/co/elastic/clients/transport/VersionInfo.java
             git commit -m "bump version" -a
             git push origin ${{ inputs.branch }}
-#           git commit -m "bump version" -a
-#           git push origin ${{ inputs.branch }}
-#           temporarily pushing bump version changes to PR until support for ephemeral token is complete
             target_branch="version-bump-to-${{ inputs.next_version }}"
             git checkout -B "$target_branch"
             git add -A
