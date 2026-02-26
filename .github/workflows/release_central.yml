@@ -10,8 +10,8 @@ on:
         description: "The version to release. Must start with the one in config/version.txt"
         required: true
       prev_version:
-        description: "The previous version, used in the release git diff."
-        required: true
+          description: "The previous version, used in the release git diff."
+          required: true
       next_version:
         description: "The next version, used to update the tags."
         required: true
@@ -91,26 +91,28 @@ jobs:
           path: elasticsearch-java
 
       - run: |
-               cd elasticsearch-java
-               git config user.name "$GIT_USER"
-               git config user.email "$GIT_MAIL"
-               git tag v${{ inputs.version }}
-               git push origin tag v${{ inputs.version }}
-               echo ${{ inputs.next_version }} > config/version.txt
-               sed -i '/static final String VERSION/s/".*"/"${{ inputs.next_version }}"/' java-client/src/main-flavored/java/co/elastic/clients/transport/VersionInfo.java
-        #            git commit -m "bump version" -a
-        #            git push origin ${{ inputs.branch }}
-        #            temporarily pushing bump version changes to PR until support for ephemeral token is complete
-               target_branch="version-bump-to-${{ inputs.next_version }}"
-               git checkout -B "$target_branch"
-               git add -A
-               git commit -m "bump version"
-               git push --force origin "$target_branch"
-               gh pr create \
-               --head "target_branch" \
-               --base "${{ inputs.branch }}" \
-               --title "Bump version from ${{ inputs.prev_version }} to ${{ inputs.next_version }}" \
-               --body "As titled."
+            cd elasticsearch-java
+            git config user.name "$GIT_USER"
+            git config user.email "$GIT_MAIL"
+            git tag v${{ inputs.version }}
+            git push origin tag v${{ inputs.version }}
+            echo ${{ inputs.next_version }} > config/version.txt
+            sed -i '/static final String VERSION/s/".*"/"${{ inputs.next_version }}"/' java-client/src/main-flavored/java/co/elastic/clients/transport/VersionInfo.java
+            git commit -m "bump version" -a
+            git push origin ${{ inputs.branch }}
+#           git commit -m "bump version" -a
+#           git push origin ${{ inputs.branch }}
+#           temporarily pushing bump version changes to PR until support for ephemeral token is complete
+            target_branch="version-bump-to-${{ inputs.next_version }}"
+            git checkout -B "$target_branch"
+            git add -A
+            git commit -m "bump version"
+            git push --force origin "$target_branch"
+            gh pr create \
+              --head "target_branch" \
+              --base "${{ inputs.branch }}" \
+              --title "Bump version from ${{ inputs.prev_version }} to ${{ inputs.next_version }}" \
+              --body "As titled."
 
       - name: Creates new github release with version ${{ inputs.version }}
         uses: softprops/action-gh-release@v2
